@@ -415,3 +415,136 @@ Also write README.md. Include:
 - Known gaps in v1: class field initialisers, static blocks not reported
 - Link to https://github.com/unclebob/crap4clj
 ```
+
+---
+
+## Prompt 7 — `CRAP4JS_DEBUG_LCOV` test coverage
+
+```
+Add a test case to test/coverage.test.mjs that verifies DEBUG_LCOV output.
+
+The test must:
+1. Mock the CRAP4JS_DEBUG_LCOV import from src/env.mjs to return true.
+   Use vi.mock() or direct module-level override.
+2. Call parseLcov() with a valid LCOV string containing two SF: entries.
+3. Assert that console.error was called with strings matching the
+   "[LCOV] raw: ... → normalised: ... → matched: ..." format.
+4. Verify each SF: entry produces exactly one diagnostic log line.
+5. Restore the original env value after the test.
+
+This addresses a gap from Prompt 2 which explicitly required this test case.
+```
+
+---
+
+## Prompt 8 — HTML fallback coverage tests
+
+```
+Add test cases to test/coverage.test.mjs that verify the HTML fallback
+coverage parser in src/coverage.mjs.
+
+The tests must use a real temp directory (no mocking fs):
+
+1. Create a temp directory with NO lcov.info file.
+2. Create an HTML file with <span> elements containing:
+   - class="covered" data-line="1"
+   - class="not-covered" data-line="2"
+   - class="covered" data-line="3"
+   (Test both attribute orderings: class before data-line and vice versa.)
+3. Call loadCoverage(tempDir) and assert:
+   - Line 1 → true
+   - Line 2 → false
+   - Line 3 → true
+4. Create a second test: temp directory with BOTH lcov.info AND HTML files.
+   Assert that lcov.info takes priority (HTML is ignored).
+5. Create a third test: empty coverage directory. Assert empty Map returned.
+6. Clean up temp directories after each test.
+
+Also verify that the HTML parser correctly derives the file path from
+the HTML file name (stripping .html suffix and making it relative).
+```
+
+---
+
+## Prompt 9 — Harden dist/build warning detection
+
+```
+Improve the dist/build source-map warning logic in src/coverage.mjs.
+
+Current behaviour: only detects paths starting with "dist/" or "build/".
+This misses absolute paths like "/home/ci/project/dist/foo.js" where
+the normalised path may not start with dist/ depending on cwd.
+
+Changes:
+1. After normalisation, check if the path contains "/dist/" or "/build/"
+   anywhere (not just at the start). Use a regex: /[/\\](dist|build)[/\\]/i
+2. Also check the raw (pre-normalisation) path for the same pattern.
+3. Keep the existing "all paths must match" threshold — only warn when
+   every SF: entry points to compiled output, not just some.
+4. Add a test case: LCOV with absolute paths containing /dist/ that
+   normalise to paths NOT starting with dist/. Verify warning is emitted.
+5. Add a test case: mixed source and dist paths. Verify NO warning.
+
+Do not change the warning message text — keep it identical.
+```
+
+---
+
+## Prompt 10 — npm packaging metadata
+
+```
+Update package.json with fields required for public npm publishing:
+
+1. Add "files" array to whitelist only published files:
+   ["src/", "README.md", "LICENSE"]
+2. Add "repository": { "type": "git", "url": "git+https://github.com/YOUR_USER/crap4js.git" }
+   (use placeholder — owner will fill in their GitHub username)
+3. Add "keywords": ["crap", "complexity", "coverage", "cyclomatic",
+   "testing", "quality", "metrics", "static-analysis"]
+4. Add "author": "" (placeholder for the owner)
+5. Add "bugs": { "url": "https://github.com/YOUR_USER/crap4js/issues" }
+6. Add "homepage": "https://github.com/YOUR_USER/crap4js#readme"
+7. Add "engines": { "node": ">=18" }
+8. Verify "license": "MIT" is present (it already is).
+9. Do NOT add a prepublishOnly script — keep it simple.
+
+Also create a LICENSE file with the MIT license text if one does not exist.
+```
+
+---
+
+## Prompt 11 — Dog-food crap4js on its own code
+
+```
+Write instructions and a short checklist for using crap4js to analyze its own repository.
+
+The prompt should cover:
+- Why this repo can analyze itself: it already has `type: "module"`, `bin: { "crap4js": "src/cli.mjs" }`, and the CLI entrypoint in `src/cli.mjs`.
+- What is required:
+  - `npm install` to install dependencies
+  - `package.json` includes `scripts` for `test`, `lint`, and `lint:env`
+  - `package.json` includes a `crap` config block:
+    - `coverageCommand: "vitest run --coverage"`
+    - `coverageDir: "coverage"`
+    - `sourceGlob: ["src/**/*.{js,mjs,ts,tsx}", "!**/*.test.*", "!**/node_modules/**"]`
+- How to run it from the repo root:
+  - `npm run crap`
+  - or `npx crap4js`
+- What the run does:
+  - runs `vitest run --coverage`
+  - loads `coverage/lcov.info`
+  - parses the repo's own `src/` files
+  - computes CC, coverage fraction, and CRAP score
+  - prints the CRAP report
+- Useful variants:
+  - `npx crap4js --no-delete` to keep existing coverage output
+  - `CRAP4JS_DEBUG_LCOV=1 npx crap4js` to debug LCOV path matching
+- Why this works:
+  - `src/cli.mjs` is the executable entrypoint
+  - `src/core.mjs` orchestrates analysis
+  - `src/coverage.mjs` parses LCOV and HTML fallback
+  - `src/complexity.mjs` analyzes JS/TS syntax
+  - tests plus Vitest coverage support are already present
+- One note:
+  - because the tool analyzes its own code, the coverage command must succeed in this repo; it does, so if you want to avoid rerunning coverage, use `--no-delete`
+```

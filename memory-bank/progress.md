@@ -1,0 +1,41 @@
+# crap4js — Progress
+
+## Prompt Implementation Status
+
+| Prompt | Module | Status | Notes |
+|--------|--------|--------|-------|
+| 0 — Project scaffold | `package.json`, `.env_schema`, `src/env.mjs`, `.gitignore`, `eslint.config.mjs` | ✅ Complete | `bin` points to `src/cli.mjs` (thin wrapper) instead of `src/core.mjs` — valid design |
+| 1 — `crap.mjs` | `src/crap.mjs`, `test/crap.test.mjs` | ✅ Complete | Formula, riskLevel, formatReport all implemented with full test coverage |
+| 2 — `coverage.mjs` | `src/coverage.mjs`, `test/coverage.test.mjs` | ✅ Complete | LCOV parsing, suffix matching, dist/ warning, DEBUG_LCOV test, HTML fallback tests all implemented |
+| 3 — `complexity.mjs` | `src/complexity.mjs`, `test/complexity.test.mjs` | ✅ Complete | All CC counting rules, naming rules, and isolation tests pass |
+| 4 — `core.mjs` | `src/core.mjs`, `src/cli.mjs` | ✅ Complete | CLI orchestrator with Commander, config from package.json, coverage fraction, exit codes |
+| 5 — `SKILL.md` | `SKILL.md` | ✅ Complete | Install, configure, run, interpret, CI, troubleshooting |
+| 6 — Integration + README | `test/integration.test.mjs`, `README.md` | ✅ Complete | End-to-end temp-dir tests, README with full usage/troubleshooting docs |
+
+## Improvement Prompts Status
+
+| Prompt | Focus | Status |
+|--------|-------|--------|
+| 7 — DEBUG_LCOV test | `test/coverage.test.mjs` | ✅ Complete | Verified via `vi.resetModules()` + `vi.doMock` |
+| 8 — HTML fallback tests | `test/coverage.test.mjs` | ✅ Complete | 5 tests covering span parsing, priority, empty dirs |
+| 9 — Harden dist/build detection | `src/coverage.mjs` | ✅ Complete | Regex matches `/dist/` or `/build/` anywhere in path |
+| 10 — npm packaging metadata | `package.json` | ✅ Complete | `files`, `keywords`, `repository`, `engines`, `LICENSE` |
+| 11 — Publishing guide | `README.md`, `CHANGELOG.md` | ✅ Complete | Added npm publishing and development docs plus changelog |
+
+## What Works
+
+- Full CRAP metric pipeline: parse source → extract functions → compute CC → load coverage → compute CRAP → format report
+- CLI with Commander: filters, `--coverage-dir`, `--coverage-cmd`, `--no-delete`
+- LCOV parsing with path normalisation, suffix matching, and diagnostic warnings
+- Babel AST-based complexity analysis for JS/TS/JSX
+- Exit code 1 for CI integration when any function scores > 30
+- All unit tests pass for `crap.mjs`, `complexity.mjs`, `coverage.mjs`
+- Integration tests pass with synthetic temp-dir setup
+
+## Known Gaps (v1)
+
+- Class field initialisers not reported as implicit functions
+- Class static blocks not reported as implicit functions
+- Callback names show as `<anonymous:line>` (future: infer from parent call)
+- No dedicated CLI-level tests exercising `src/cli.mjs` via `spawnSync`
+- No monorepo support for `sourceGlob` root-relative paths

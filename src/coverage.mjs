@@ -64,8 +64,9 @@ function parseLcov(lcovContent, sourceFiles) {
       let normalised = normalisePath(raw);
       totalFileCount++;
 
-      // Check for dist/build path pattern
-      if (/^(dist|build)[/\\]/i.test(normalised)) {
+      // Check for dist/build path pattern (anywhere in the path)
+      if (/(?:^|[/\\])(dist|build)(?:[/\\]|$)/i.test(normalised) ||
+          /(?:^|[/\\])(dist|build)(?:[/\\]|$)/i.test(raw)) {
         distPathCount++;
       }
 

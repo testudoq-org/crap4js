@@ -6,6 +6,11 @@
   "bin": {
     "crap4js": "src/cli.mjs"
   },
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "vitest run",
     "lint": "eslint src/ test/",
@@ -20,6 +25,28 @@
       "!**/node_modules/**"
     ]
   },
+  "keywords": [
+    "crap",
+    "complexity",
+    "coverage",
+    "cyclomatic",
+    "testing",
+    "quality",
+    "metrics",
+    "static-analysis"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_USER/crap4js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USER/crap4js/issues"
+  },
+  "homepage": "https://github.com/YOUR_USER/crap4js#readme",
+  "author": "",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "@babel/parser": "^7.26",
     "@babel/traverse": "^7.26",
@@ -28,6 +55,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.0.0",
     "varlock": "^0.7.0",
     "vitest": "^3.0.0"

@@ -108,6 +108,33 @@ crap4js [filters...]          Filter by file path fragment (OR logic)
 - **Path mismatches**: Set `CRAP4JS_DEBUG_LCOV=1` to see per-file path matching diagnostics.
 - **TypeScript projects**: Works out of the box — Babel parser handles TS syntax. No config needed.
 
+## Publishing to npm
+
+Publish this package once you're ready to share it publicly.
+
+```bash
+npm login
+npm publish --access public
+```
+
+Before publishing, bump the package version as appropriate:
+
+```bash
+npm version patch
+npm version minor
+npm version major
+```
+
+## Development
+
+Use these commands while working on the repo:
+
+```bash
+npm test
+npm run lint
+npm run lint:env
+```
+
 ## Known Gaps (v1)
 
 - Class field initialisers are not reported as implicit functions
