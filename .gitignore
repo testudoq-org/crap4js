@@ -1,0 +1,9 @@
+
+node_modules/
+coverage/
+.env
+dist/
+*.tgz
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md

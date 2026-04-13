@@ -1,0 +1,36 @@
+{
+  "name": "crap4js",
+  "version": "1.0.0",
+  "description": "CRAP metric for JavaScript/TypeScript — identifies complex, under-tested code",
+  "type": "module",
+  "bin": {
+    "crap4js": "src/cli.mjs"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "lint": "eslint src/ test/",
+    "lint:env": "varlock check"
+  },
+  "crap": {
+    "coverageCommand": "vitest run --coverage",
+    "coverageDir": "coverage",
+    "sourceGlob": [
+      "src/**/*.{js,mjs,ts,tsx}",
+      "!**/*.test.*",
+      "!**/node_modules/**"
+    ]
+  },
+  "dependencies": {
+    "@babel/parser": "^7.26",
+    "@babel/traverse": "^7.26",
+    "commander": "^13",
+    "globby": "^14"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "varlock": "^0.7.0",
+    "vitest": "^3.0.0"
+  },
+  "license": "MIT"
+}
