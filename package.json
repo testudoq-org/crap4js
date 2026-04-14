@@ -9,7 +9,8 @@
   "files": [
     "src/",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "LEGAL.md"
   ],
   "scripts": {
     "test": "vitest run",
