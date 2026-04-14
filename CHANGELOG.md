@@ -4,9 +4,10 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com).
 
-## [1.0.1-beta.1] - 2026-04-14
+## [1.0.1-beta.2] - 2026-04-14
 
 ### Changed
+- Legal tidy-up: changed package license to CC BY-NC 4.0 and updated license metadata and documentation.
 - Updated `package.json` metadata: set `author`, `repository`, `bugs`, and `homepage` to correct GitHub URLs (replaced `YOUR_USER` placeholders with `testudoq-org`).
 
 ### Security
@@ -30,7 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com).
 - `vitest.config.mjs`: coverage configured to produce LCOV output (`reporter: ['text', 'lcov']`).
 - `SKILL.md` for Claude Code integration.
 - Comprehensive unit tests (67 tests across 4 files) covering formula, coverage parsing, AST complexity, and integration.
-- npm packaging metadata (`files`, `keywords`, `repository`, `engines`) and MIT LICENSE.
+- npm packaging metadata (`files`, `keywords`, `repository`, `engines`) and CC BY-NC 4.0 license metadata.
 - `npm run crap` script for dog-fooding (running crap4js on its own code).
 - README with full setup guide including LCOV configuration for Vitest, Jest, c8/nyc.
 - CI integration: exit code 1 when any function scores > 30.

@@ -505,10 +505,10 @@ Update package.json with fields required for public npm publishing:
 5. Add "bugs": { "url": "https://github.com/YOUR_USER/crap4js/issues" }
 6. Add "homepage": "https://github.com/YOUR_USER/crap4js#readme"
 7. Add "engines": { "node": ">=18" }
-8. Verify "license": "MIT" is present (it already is).
+8. Verify "license": "CC-BY-NC-4.0" is present.
 9. Do NOT add a prepublishOnly script — keep it simple.
 
-Also create a LICENSE file with the MIT license text if one does not exist.
+Also create a LICENSE file with the Creative Commons Attribution-NonCommercial 4.0 International license text if one does not exist.
 ```
 
 ---
@@ -966,5 +966,33 @@ Identify why crap4js did not produce a report after installation and document th
 - If the coverage command fails, an empty report is expected; fix the workspace tests/coverage runner first.
 - Check that `coverage/lcov.info` exists and is readable before rerunning `npx crap4js`.
 - For monorepos, set per-workspace config and pass `--coverage-dir` when needed.
+```
+
+## Prompt 17 — Legal / License Tidy-Up
+
+```
+Review the repository for any references to the MIT license and replace them with Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+
+## 1. License metadata
+
+- Ensure `package.json` uses `CC-BY-NC-4.0`.
+- Ensure the `LICENSE` file contains the CC BY-NC 4.0 license text.
+- Update any repository docs or internal design notes that still refer to MIT.
+
+## 2. Documentation review
+
+- Update `CHANGELOG.md`, `README.md`, and any prompt or design docs that mention MIT.
+- Keep the repository's public license consistent across `package.json`, `LICENSE`, and `LEGAL.md`.
+
+## 3. Publishing impact
+
+- Publish the updated legal/license package version to npm so the public package metadata matches the repository license.
+- Use the appropriate npm dist-tag for the release channel.
+
+## 4. Summary
+
+- This prompt is a legal tidy-up and license alignment task.
+- Replace remaining MIT references with CC BY-NC 4.0.
+- Ensure the packaged artifact carries the corrected license metadata.
 ```
 

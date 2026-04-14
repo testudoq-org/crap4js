@@ -40,7 +40,7 @@ crap4js/
 ├── SKILL.md                 # Claude Code integration
 ├── SECURITY.md              # Contributor security guidelines
 ├── CHANGELOG.md             # Keep a Changelog format
-└── LICENSE                  # MIT
+└── LICENSE                  # CC BY-NC 4.0
 ```
 
 ## Self-Analysis Results (npm run crap)

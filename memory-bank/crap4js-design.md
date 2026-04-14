@@ -175,7 +175,7 @@ crap4js/
 ├── README.md
 ├── SKILL.md              # Claude Code integration (mirrors crap4clj)
 ├── CHANGELOG.md
-└── LICENSE               # MIT
+└── LICENSE               # CC BY-NC 4.0
 ```
 
 ### Build order

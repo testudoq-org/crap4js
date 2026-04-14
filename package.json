@@ -1,6 +1,6 @@
 {
   "name": "crap4js",
-  "version": "1.0.1-beta.1",
+  "version": "1.0.1-beta.2",
   "description": "CRAP metric for JavaScript/TypeScript — identifies complex, under-tested code",
   "type": "module",
   "bin": {
@@ -47,6 +47,7 @@
   },
   "homepage": "https://github.com/testudoq-org/crap4js#readme",
   "author": "testudoq",
+  "license": "CC-BY-NC-4.0",
   "engines": {
     "node": ">=18"
   },
@@ -63,6 +64,5 @@
     "eslint-plugin-security": "^4.0.0",
     "varlock": "^0.7.0",
     "vitest": "^3.0.0"
-  },
-  "license": "MIT"
+  }
 }
