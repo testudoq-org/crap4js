@@ -602,3 +602,94 @@ Fix:
 Do not change coverage.mjs or any other source logic. This is purely a
 configuration fix — the tool works correctly when LCOV data is present.
 ```
+
+---
+
+## Prompt 13 — Risk column + multi-format output (text, markdown, HTML)
+
+```
+Add a Risk column to the CRAP report and support three output formats:
+plain text (default), markdown, and HTML.
+
+## Part A — Risk column
+
+Add a "Risk" column as the last column in the report table.
+
+Changes to src/crap.mjs:
+1. Add COL_RISK = 10 constant alongside the existing column width constants.
+2. In the header row, append "Risk" right-padded to COL_RISK.
+3. In each data row, append the result of riskLevel(entry.crap):
+   - "low", "moderate", "high", or "N/A" for null scores.
+   - Pad to COL_RISK.
+4. Update the separator line width to include the new column.
+5. The riskLevel() function already exists — reuse it.
+
+Expected text output after this change:
+
+  CRAP Report
+  ===========
+  Function                       File                                   CC     Cov%     CRAP  Risk
+  -------------------------------------------------------------------------------------------------
+  resolveName                    src/complexity.mjs                     25    87.5%     26.2  moderate
+  simpleFn                       src/crap.mjs                            1   100.0%      1.0  low
+  unknownFn                      src/util/helpers.mjs                    3      N/A      N/A  N/A
+
+  0 functions at high risk, 1 at moderate.
+
+## Part B — Multi-format output
+
+Add a `format` parameter to formatReport() and a --format CLI option.
+
+Changes to src/crap.mjs:
+1. Change signature: formatReport(entries, format = 'text')
+2. format accepts: 'text' (default), 'markdown', 'html'
+3. Text format: current fixed-width table (with the new Risk column from Part A)
+4. Markdown format:
+   - Standard pipe-delimited markdown table
+   - Header: | Function | File | CC | Cov% | CRAP | Risk |
+   - Alignment row: |:---|:---|---:|---:|---:|:---|
+   - Data rows with same values as text, no padding needed
+   - Title "CRAP Report" as a markdown heading (## CRAP Report)
+   - Risk summary as a paragraph after the table
+5. HTML format:
+   - Complete <table> with <thead> and <tbody>
+   - Risk cells get a CSS class: class="risk-low", class="risk-moderate",
+     class="risk-high", or class="risk-na"
+   - Wrap in a minimal <div class="crap-report"> container
+   - Include a <style> block with basic colours:
+     .risk-low { color: green; }
+     .risk-moderate { color: orange; }
+     .risk-high { color: red; font-weight: bold; }
+   - Risk summary as a <p> after the table
+   - Do NOT generate a full HTML page — just the fragment
+     (users embed it in their own pages or CI reports)
+
+Changes to src/core.mjs:
+1. Pass options.format through to formatReport(entries, format)
+2. The run() function signature already accepts an options object — add format
+
+Changes to CLI (src/core.mjs cli()):
+1. Add --format <text|markdown|html> option (default: 'text')
+2. Pass opts.format to run()
+
+## Tests (test/crap.test.mjs)
+
+Add tests for:
+1. Text format includes Risk column with correct values (low, moderate, high, N/A)
+2. Markdown format produces valid pipe table with header, alignment row, data
+3. Markdown format sorts same as text (descending CRAP, null last)
+4. HTML format produces <table> with correct structure
+5. HTML format includes risk CSS classes on risk cells
+6. HTML format includes <style> block
+7. Default format is 'text' (backward compatible)
+8. Risk summary appears in all three formats
+
+## Constraints
+
+- Do not change the analysis pipeline (core.mjs steps 1-6)
+- Do not change crapScore() or riskLevel() signatures
+- Existing tests must continue to pass without modification
+  (formatReport(entries) with no format arg must produce text)
+- The text format column widths for existing columns must not change
+  (Function 30, File 36, CC 4, Cov% 8, CRAP 8) — only Risk 10 is added
+```

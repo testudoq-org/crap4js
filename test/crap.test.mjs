@@ -63,6 +63,12 @@ describe('formatReport', () => {
     { name: 'unknownFn', file: 'src/util/helpers.mjs', cc: 3, coverage: null, crap: null },
   ];
 
+  it('defaults to text format when no format is specified', () => {
+    const report = formatReport(entries);
+    expect(report).toMatch(/^CRAP Report/);
+    expect(report).toMatch(/===========\n/);
+  });
+
   it('sorts descending by CRAP, null-coverage last', () => {
     const report = formatReport(entries);
     const lines = report.split('\n');
@@ -81,9 +87,20 @@ describe('formatReport', () => {
   });
 
   it('includes the report header', () => {
-    const report = formatReport(entries);
+    const report = formatReport(entries, 'text');
     expect(report).toMatch(/^CRAP Report/);
     expect(report).toMatch(/===========\n/);
+  });
+
+  it('includes the Risk column in text format', () => {
+    const report = formatReport(entries, 'text');
+    expect(report).toMatch(/Risk/);    // header
+    const lines = report.split('\n');
+    const dataLines = lines.slice(4).filter(l => l.trim() && !l.match(/^\d+ functions/));
+    expect(dataLines[0]).toMatch(/high/);       // complexFn CRAP=35.958
+    expect(dataLines[1]).toMatch(/moderate/);   // <anonymous:47> CRAP=20
+    expect(dataLines[2]).toMatch(/low/);        // simpleFn CRAP=1
+    expect(dataLines[3]).toMatch(/N\/A/);       // unknownFn null CRAP
   });
 
   it('includes a risk summary line', () => {
@@ -99,5 +116,70 @@ describe('formatReport', () => {
     const dataLine = report.split('\n')[4];
     // Function name truncated at 30 chars (29 + …)
     expect(dataLine.slice(0, 30)).toMatch(/…$/);
+  });
+
+  // ── Markdown format ───────────────────────────────────────────
+
+  it('produces a markdown pipe table', () => {
+    const report = formatReport(entries, 'markdown');
+    expect(report).toMatch(/^## CRAP Report/);
+    expect(report).toMatch(/\| Function \| File \| CC \| Cov% \| CRAP \| Risk \|/);
+    expect(report).toMatch(/\|:---|:---|---:|---:|---:|:---\|/);
+  });
+
+  it('includes Risk values in markdown rows', () => {
+    const report = formatReport(entries, 'markdown');
+    const lines = report.split('\n');
+    const dataLines = lines.filter(l => l.startsWith('|') && !l.includes('Function') && !l.includes(':---'));
+    expect(dataLines[0]).toMatch(/\| high \|/);
+    expect(dataLines[1]).toMatch(/\| moderate \|/);
+    expect(dataLines[2]).toMatch(/\| low \|/);
+    expect(dataLines[3]).toMatch(/\| N\/A \|/);
+  });
+
+  it('includes risk summary in markdown', () => {
+    const report = formatReport(entries, 'markdown');
+    expect(report).toMatch(/1 functions at high risk, 1 at moderate\./);
+  });
+
+  // ── HTML format ───────────────────────────────────────────────
+
+  it('produces HTML with a table', () => {
+    const report = formatReport(entries, 'html');
+    expect(report).toMatch(/<div class="crap-report">/);
+    expect(report).toMatch(/<table>/);
+    expect(report).toMatch(/<thead>/);
+    expect(report).toMatch(/<th>Risk<\/th>/);
+    expect(report).toMatch(/<\/table>/);
+    expect(report).toMatch(/<\/div>/);
+  });
+
+  it('applies risk CSS classes in HTML', () => {
+    const report = formatReport(entries, 'html');
+    expect(report).toMatch(/class="risk-high"/);
+    expect(report).toMatch(/class="risk-moderate"/);
+    expect(report).toMatch(/class="risk-low"/);
+    expect(report).toMatch(/class="risk-na"/);
+  });
+
+  it('includes CSS styles in HTML', () => {
+    const report = formatReport(entries, 'html');
+    expect(report).toMatch(/\.risk-high\s*\{/);
+    expect(report).toMatch(/\.risk-moderate\s*\{/);
+    expect(report).toMatch(/\.risk-low\s*\{/);
+  });
+
+  it('escapes HTML entities', () => {
+    const htmlEntries = [
+      { name: '<script>alert(1)</script>', file: 'src/test.mjs', cc: 1, coverage: 1.0, crap: 1 },
+    ];
+    const report = formatReport(htmlEntries, 'html');
+    expect(report).not.toMatch(/<script>/);
+    expect(report).toMatch(/&lt;script&gt;/);
+  });
+
+  it('includes risk summary in HTML', () => {
+    const report = formatReport(entries, 'html');
+    expect(report).toMatch(/<p>1 functions at high risk, 1 at moderate\.<\/p>/);
   });
 });

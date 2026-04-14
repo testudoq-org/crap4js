@@ -150,7 +150,8 @@ export function run(options = {}) {
   }
 
   // Step 7: Format and output
-  const output = formatReport(entries);
+  const format = options.format || 'text';
+  const output = formatReport(entries, format);
 
   // Step 8: Exit code
   const hasHighRisk = entries.some(e => e.crap != null && e.crap > 30);
@@ -169,12 +170,14 @@ export function cli(argv) {
     .option('--coverage-dir <dir>', 'coverage directory')
     .option('--coverage-cmd <cmd>', 'coverage command')
     .option('--no-delete', 'skip deleting coverage dir before run')
+    .option('--format <format>', 'output format: text, markdown, html', 'text')
     .action((filters, opts) => {
       const result = run({
         filters,
         coverageDir: opts.coverageDir,
         coverageCmd: opts.coverageCmd,
         delete: opts.delete,
+        format: opts.format,
       });
 
       console.log(result.output);
