@@ -858,3 +858,55 @@ CI configuration, or third-party service setup.
 
 No code is modified by this prompt — it is a review document only.
 ```
+
+## Prompt 15 — Release & npm Publish Plan
+
+```
+Document a complete release and npm publishing plan for crap4js.
+Combine the publish checklist from Prompt 99 with the following guidance:
+
+## 1. Versioning
+
+- Use semantic versioning: MAJOR.MINOR.PATCH.
+- Bump `patch` for bug fixes and backwards-compatible changes.
+- Bump `minor` for new features that remain backwards compatible.
+- Bump `major` for breaking changes.
+- Update `package.json` version before publishing.
+- Keep `CHANGELOG.md` or release notes aligned with the version.
+
+## 2. Package validation
+
+- Confirm `package.json` metadata: `name`, `version`, `author`, `repository`, `bugs`, `homepage`, `license`.
+- Confirm `files` exports only intended published assets: `src/`, `README.md`, `LICENSE`, `LEGAL.md`.
+- Confirm `bin` points to `src/cli.mjs`.
+- Run `npm test`, `npm run lint`, and `npm run audit:security`.
+- Run `npm pack --dry-run` and verify the archive contents.
+
+## 3. Publish flow
+
+- Log in with `npm login`.
+- Publish stable release with `npm publish --access public`.
+- For prerelease channels, use dist-tags:
+  - `npm publish --tag next`
+  - `npm publish --tag beta`
+- Keep `latest` reserved for stable releases.
+
+## 4. Git release hygiene
+
+- Tag the release: `git tag vX.Y.Z`.
+- Push commits and tags: `git push origin main --tags`.
+- Document release notes in GitHub Releases or `CHANGELOG.md`.
+
+## 5. CI / automation notes
+
+- Automate tests, lint, audit, version bump, and publish where possible.
+- Protect npm auth tokens and never commit secrets.
+- Use CI to enforce `npm test` and `npm run lint` before every publish.
+
+## 6. Summary
+
+- Prompt 15 is documentation only.
+- It replaces Prompt 99 in the prompt bank.
+- It captures npm publishing, semantic versioning, dist-tags, validation, and release process best practices.
+```
+
