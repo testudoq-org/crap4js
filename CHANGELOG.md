@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com).
 
+## [1.0.1-beta.0] - 2026-04-14
+
+### Changed
+- Updated `package.json` metadata: set `author`, `repository`, `bugs`, and `homepage` to correct GitHub URLs (replaced `YOUR_USER` placeholders with `testudoq-org`).
+
+### Security
+- `eslint-plugin-security` added for static security linting.
+- `validateCoverageCmd()` restricts coverage runners to an allowlist.
+- `validateCoverageDir()` prevents directory traversal in relative coverage paths.
+- `escapeHtml()` now escapes single quotes (`&#39;`).
+- `SECURITY.md` added with contributor security guidelines.
+- `npm run audit:security` script for dependency vulnerability scanning.
+
 ## [1.0.0] - 2026-04-14
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "crap4js",
-  "version": "1.0.0",
+  "version": "1.0.1-beta.0",
   "description": "CRAP metric for JavaScript/TypeScript — identifies complex, under-tested code",
   "type": "module",
   "bin": {
@@ -40,13 +40,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR_USER/crap4js.git"
+    "url": "git+https://github.com/testudoq-org/crap4js.git"
   },
   "bugs": {
-    "url": "https://github.com/YOUR_USER/crap4js/issues"
+    "url": "https://github.com/testudoq-org/crap4js/issues"
   },
-  "homepage": "https://github.com/YOUR_USER/crap4js#readme",
-  "author": "",
+  "homepage": "https://github.com/testudoq-org/crap4js#readme",
+  "author": "testudoq",
   "engines": {
     "node": ">=18"
   },
