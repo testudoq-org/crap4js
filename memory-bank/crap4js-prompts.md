@@ -910,3 +910,61 @@ Combine the publish checklist from Prompt 99 with the following guidance:
 - It captures npm publishing, semantic versioning, dist-tags, validation, and release process best practices.
 ```
 
+## Prompt 16 — CRAP Setup Diagnosis
+
+```
+Identify why crap4js did not produce a report after installation and document the required workspace configuration.
+
+## 1. Problem
+
+- crap4js depends on workspace-specific coverage configuration.
+- If no `crap` config block exists in `package.json`, the tool cannot infer coverage settings.
+- Without `coverageCommand`, `coverageDir`, and `sourceGlob`, crap4js cannot generate a function-level CRAP report.
+- A missing `crap` script means the workspace does not expose a standard way to run the report.
+
+## 2. Expected setup
+
+- `package.json` must include a `crap` config block with:
+  - `coverageCommand`: command to generate LCOV coverage
+  - `coverageDir`: directory containing `lcov.info`
+  - `sourceGlob`: source file patterns to analyze
+- `package.json` should also include a `crap` script, e.g.:
+  - `"crap": "crap4js"`
+
+## 3. Workspace validation
+
+- If the workspace already has coverage output and a matching config, crap4js is ready.
+- If coverage is missing, install `@vitest/coverage-v8` and configure `vitest` to emit `lcov`.
+- If the coverage command exits non-zero, fix the workspace tests/coverage pipeline first; partial coverage results are not reliable.
+- If the package is part of a monorepo, pass `--coverage-dir` and run coverage in the correct subworkspace.
+
+## 3.1. Monorepo examples
+
+- `npx crap4js --coverage-dir server/coverage`
+- `npx crap4js --coverage-dir web/coverage`
+
+## 4. Example root package configuration
+
+```json
+"scripts": {
+  "crap": "crap4js"
+},
+"crap": {
+  "coverageCommand": "vitest run --coverage",
+  "coverageDir": "coverage",
+  "sourceGlob": [
+    "src/**/*.{js,mjs,ts,tsx}",
+    "!**/*.test.*",
+    "!**/node_modules/**"
+  ]
+}
+```
+
+## 5. Summary
+
+- The issue is missing application-specific `crap` metadata, not a failure of the tool itself.
+- If the coverage command fails, an empty report is expected; fix the workspace tests/coverage runner first.
+- Check that `coverage/lcov.info` exists and is readable before rerunning `npx crap4js`.
+- For monorepos, set per-workspace config and pass `--coverage-dir` when needed.
+```
+

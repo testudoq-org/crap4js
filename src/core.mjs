@@ -140,14 +140,19 @@ export function run(options = {}) {
   // When format != text, redirect coverage output to stderr so only
   // the report goes to stdout (important for piping html/markdown to a file).
   const format = options.format || 'text';
+  let coverageCommandFailed = false;
   if (shouldRunCoverage) {
     const covStdio = format === 'text'
       ? 'inherit'
       : ['inherit', process.stderr, 'inherit'];
     try {
       execSync(coverageCmd, { stdio: covStdio });
-    } catch {
+    } catch (err) {
+      coverageCommandFailed = true;
       console.error('[crap4js] Warning: coverage command exited with non-zero status. Continuing with partial coverage.');
+      if (err && err.status != null) {
+        console.error(`[crap4js] Warning: coverage command exited with status ${err.status}.`);
+      }
     }
   }
 
@@ -160,6 +165,11 @@ export function run(options = {}) {
 
   const sourceFileSet = new Set(sourceFiles);
   const coverageData = loadCoverage(coverageDir, sourceFileSet);
+  const coverageLoaded = coverageData.size > 0;
+
+  if (coverageCommandFailed && !coverageLoaded) {
+    console.error('[crap4js] Error: Coverage command failed and no coverage data was loaded. Fix the workspace tests/coverage pipeline and rerun.');
+  }
 
   // Step 5: Filter source files
   let filesToAnalyse = sourceFiles;
@@ -204,10 +214,15 @@ export function run(options = {}) {
   }
 
   // Step 7: Format and output
-  const output = formatReport(entries, format);
+  let output = formatReport(entries, format);
 
   // Step 8: Exit code
   const hasHighRisk = entries.some(e => e.crap != null && e.crap > 30);
+
+  if (coverageCommandFailed && !coverageLoaded) {
+    output = '[crap4js] ERROR: Coverage command failed and no coverage data was loaded. Fix the workspace tests/coverage pipeline and rerun.\n\n' + output;
+    return { output, exitCode: 1 };
+  }
 
   return { output, exitCode: hasHighRisk ? 1 : 0 };
 }
