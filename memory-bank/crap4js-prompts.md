@@ -693,3 +693,52 @@ Add tests for:
 - The text format column widths for existing columns must not change
   (Function 30, File 36, CC 4, Cov% 8, CRAP 8) — only Risk 10 is added
 ```
+
+## Prompt 13A — Fix crap4js --format html
+
+```
+The markdown and plain text outputs are functioning correctly. However,
+when executing `npx crap4js --format html > crap-report.html`, the
+resulting file has two problems:
+
+1. No valid HTML document structure — the output is a bare <div> fragment
+   missing <!DOCTYPE html>, <html>, <head>, <title>, and <body> wrappers.
+   Browsers can render it, but it is not a conformant HTML page.
+
+2. When piped to a file, Vitest's console output (ANSI escape codes,
+   coverage table) appears above the HTML because `console.log()` in
+   core.mjs writes everything to stdout.
+
+Fix: Wrap the HTML formatter output in a full HTML5 document:
+
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>CRAP Report</title>
+    <style>…</style>
+  </head>
+  <body>
+    <h2>CRAP Report</h2>
+    <table>…</table>
+    <p>risk summary</p>
+  </body>
+  </html>
+
+Move the <style> block into <head>. Drop the outer <div class="crap-report">
+wrapper (the <body> serves that role). Keep all existing CSS classes and
+escaping.
+
+Update tests:
+- HTML output starts with <!DOCTYPE html>
+- Contains <html, <head>, <body>, </html>
+- <style> block is inside <head>
+- Risk CSS classes still present
+- HTML entity escaping still works
+- Existing text and markdown tests unchanged
+
+Verify:
+- `npx crap4js --format html > crap-report.html` produces a valid HTML page
+- `npm test` — all tests pass, no regression
+- `npm run crap` — text output unchanged
+```

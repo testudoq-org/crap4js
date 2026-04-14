@@ -89,9 +89,15 @@ export function run(options = {}) {
   }
 
   // Step 3: Run coverage command
+  // When format != text, redirect coverage output to stderr so only
+  // the report goes to stdout (important for piping html/markdown to a file).
+  const format = options.format || 'text';
   if (shouldRunCoverage) {
+    const covStdio = format === 'text'
+      ? 'inherit'
+      : ['inherit', process.stderr, 'inherit'];
     try {
-      execSync(coverageCmd, { stdio: 'inherit' });
+      execSync(coverageCmd, { stdio: covStdio });
     } catch {
       console.error('[crap4js] Warning: coverage command exited with non-zero status. Continuing with partial coverage.');
     }
@@ -150,7 +156,6 @@ export function run(options = {}) {
   }
 
   // Step 7: Format and output
-  const format = options.format || 'text';
   const output = formatReport(entries, format);
 
   // Step 8: Exit code

@@ -144,14 +144,30 @@ describe('formatReport', () => {
 
   // ── HTML format ───────────────────────────────────────────────
 
-  it('produces HTML with a table', () => {
+  it('produces a valid HTML5 document with a table', () => {
     const report = formatReport(entries, 'html');
-    expect(report).toMatch(/<div class="crap-report">/);
+    expect(report).toMatch(/^<!DOCTYPE html>/);
+    expect(report).toMatch(/<html lang="en">/);
+    expect(report).toMatch(/<head>/);
+    expect(report).toMatch(/<title>CRAP Report<\/title>/);
+    expect(report).toMatch(/<\/head>/);
+    expect(report).toMatch(/<body>/);
     expect(report).toMatch(/<table>/);
     expect(report).toMatch(/<thead>/);
     expect(report).toMatch(/<th>Risk<\/th>/);
     expect(report).toMatch(/<\/table>/);
-    expect(report).toMatch(/<\/div>/);
+    expect(report).toMatch(/<\/body>/);
+    expect(report).toMatch(/<\/html>$/);
+  });
+
+  it('places style block inside head', () => {
+    const report = formatReport(entries, 'html');
+    const headStart = report.indexOf('<head>');
+    const headEnd = report.indexOf('</head>');
+    const styleStart = report.indexOf('<style>');
+    const styleEnd = report.indexOf('</style>');
+    expect(styleStart).toBeGreaterThan(headStart);
+    expect(styleEnd).toBeLessThan(headEnd);
   });
 
   it('applies risk CSS classes in HTML', () => {

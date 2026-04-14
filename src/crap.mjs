@@ -151,16 +151,23 @@ function escapeHtml(str) {
 
 function formatHtml(sorted) {
   const lines = [];
-  lines.push('<div class="crap-report">');
+  lines.push('<!DOCTYPE html>');
+  lines.push('<html lang="en">');
+  lines.push('<head>');
+  lines.push('<meta charset="utf-8">');
+  lines.push('<title>CRAP Report</title>');
   lines.push('<style>');
-  lines.push('.crap-report table { border-collapse: collapse; font-family: monospace; }');
-  lines.push('.crap-report th, .crap-report td { padding: 4px 8px; border: 1px solid #ddd; }');
-  lines.push('.crap-report th { background: #f5f5f5; }');
+  lines.push('body { font-family: sans-serif; margin: 2em; }');
+  lines.push('table { border-collapse: collapse; font-family: monospace; }');
+  lines.push('th, td { padding: 4px 8px; border: 1px solid #ddd; }');
+  lines.push('th { background: #f5f5f5; }');
   lines.push('.risk-low { color: green; }');
   lines.push('.risk-moderate { color: orange; }');
   lines.push('.risk-high { color: red; font-weight: bold; }');
   lines.push('.risk-na { color: #999; }');
   lines.push('</style>');
+  lines.push('</head>');
+  lines.push('<body>');
   lines.push('<h2>CRAP Report</h2>');
   lines.push('<table>');
   lines.push('<thead><tr><th>Function</th><th>File</th><th>CC</th><th>Cov%</th><th>CRAP</th><th>Risk</th></tr></thead>');
@@ -181,7 +188,8 @@ function formatHtml(sorted) {
   lines.push('</tbody>');
   lines.push('</table>');
   lines.push(`<p>${riskSummary(sorted)}</p>`);
-  lines.push('</div>');
+  lines.push('</body>');
+  lines.push('</html>');
 
   return lines.join('\n');
 }
