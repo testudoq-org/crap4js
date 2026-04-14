@@ -191,4 +191,24 @@ describe('integration', () => {
     expect(result.exitCode).toBe(1);
     expect(result.output).toContain('high risk');
   });
+
+  it('fails when the coverage command exits non-zero and no coverage data is loaded', () => {
+    const srcDir = join(tempDir, 'src');
+    mkdirSync(srcDir, { recursive: true });
+    writeFileSync(join(srcDir, 'broken.mjs'), 'export function broken() { return 42; }');
+
+    const covDir = join(tempDir, 'coverage');
+    const result = run({
+      filters: [],
+      coverageDir: covDir,
+      coverageCmd: 'node -e throw',
+      sourceGlob: [join(srcDir, '**/*.mjs').replace(/\\/g, '/')],
+      delete: false,
+      runCoverage: true,
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(result.output).toContain('Coverage command failed');
+    expect(result.output).toContain('CRAP Report');
+  });
 });
