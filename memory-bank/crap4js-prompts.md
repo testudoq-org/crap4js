@@ -548,3 +548,57 @@ The prompt should cover:
 - One note:
   - because the tool analyzes its own code, the coverage command must succeed in this repo; it does, so if you want to avoid rerunning coverage, use `--no-delete`
 ```
+
+---
+
+## Prompt 12 — Vitest LCOV reporter configuration (dog-food fix)
+
+```
+Fix the N/A coverage problem when crap4js dog-foods itself.
+
+Root cause:
+- crap4js loads coverage from `coverage/lcov.info`
+- Vitest's default coverage reporters are `['text', 'html', 'clover', 'json']` — no LCOV
+- Without `lcov.info`, `loadCoverage()` falls back to HTML parsing
+- The HTML fallback expects `<span class="covered" data-line="N">` elements,
+  but Istanbul/v8 HTML uses `<span class="cline-any cline-yes">` — no match
+- Result: every function shows N/A for coverage and CRAP
+
+Fix:
+1. Create `vitest.config.mjs` at the project root with:
+   - Coverage reporter list that includes `'lcov'` (plus `'text'` for console output)
+   - `reportsDirectory` set to `'coverage'` (matches the `crap.coverageDir` default)
+   - Coverage include pattern matching the project's source files
+
+   ```js
+   import { defineConfig } from 'vitest/config';
+
+   export default defineConfig({
+     test: {
+       coverage: {
+         reporter: ['text', 'lcov'],
+         reportsDirectory: 'coverage',
+       },
+     },
+   });
+   ```
+
+2. Add `"crap": "crap4js"` to the `scripts` block in `package.json`
+   so that `npm run crap` works out of the box.
+
+3. Add `@vitest/coverage-v8` to `devDependencies` if not already present
+   (it is the coverage provider Vitest v3 uses for v8).
+
+4. Run `npm run crap` and verify:
+   - `coverage/lcov.info` is generated
+   - All functions show numeric Cov% and CRAP values (no N/A)
+   - The report matches expected scores
+
+5. Update `README.md` Troubleshooting section to include:
+   - "N/A coverage: ensure your test runner is configured to produce LCOV
+     output. For Vitest, add `reporter: ['text', 'lcov']` to your coverage
+     config in `vitest.config.mjs`."
+
+Do not change coverage.mjs or any other source logic. This is purely a
+configuration fix — the tool works correctly when LCOV data is present.
+```

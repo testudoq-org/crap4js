@@ -159,17 +159,23 @@ Four files, mirroring the Clojure source one-to-one.
 ```
 crap4js/
 ├── src/
+│   ├── cli.mjs           # Thin shebang wrapper for bin entry
 │   ├── crap.mjs          # Formula + table formatter
-│   ├── coverage.mjs      # LCOV parser
+│   ├── coverage.mjs      # LCOV parser + HTML fallback
 │   ├── complexity.mjs    # AST walker, CC computation, function extraction
-│   └── core.mjs          # CLI orchestrator
+│   ├── core.mjs          # CLI orchestrator
+│   └── env.mjs           # Centralised env var access (varlock-validated)
 ├── test/
 │   ├── crap.test.mjs
 │   ├── coverage.test.mjs
-│   └── complexity.test.mjs
+│   ├── complexity.test.mjs
+│   └── integration.test.mjs
+├── vitest.config.mjs     # Coverage: reporter ['text', 'lcov']
 ├── package.json
 ├── README.md
-└── SKILL.md              # Claude Code integration (mirrors crap4clj)
+├── SKILL.md              # Claude Code integration (mirrors crap4clj)
+├── CHANGELOG.md
+└── LICENSE               # MIT
 ```
 
 ### Build order

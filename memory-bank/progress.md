@@ -20,7 +20,8 @@
 | 8 — HTML fallback tests | `test/coverage.test.mjs` | ✅ Complete | 5 tests covering span parsing, priority, empty dirs |
 | 9 — Harden dist/build detection | `src/coverage.mjs` | ✅ Complete | Regex matches `/dist/` or `/build/` anywhere in path |
 | 10 — npm packaging metadata | `package.json` | ✅ Complete | `files`, `keywords`, `repository`, `engines`, `LICENSE` |
-| 11 — Publishing guide | `README.md`, `CHANGELOG.md` | ✅ Complete | Added npm publishing and development docs plus changelog |
+| 11 — Dog-food crap4js | `README.md`, `CHANGELOG.md` | ✅ Complete | Dog-food instructions, publishing/dev docs, changelog |
+| 12 — Vitest LCOV config | `vitest.config.mjs`, `package.json`, `README.md` | ✅ Complete | Added LCOV reporter so dog-fooding produces real scores |
 
 ## What Works
 
@@ -29,8 +30,11 @@
 - LCOV parsing with path normalisation, suffix matching, and diagnostic warnings
 - Babel AST-based complexity analysis for JS/TS/JSX
 - Exit code 1 for CI integration when any function scores > 30
-- All unit tests pass for `crap.mjs`, `complexity.mjs`, `coverage.mjs`
+- All 67 unit tests pass across 4 test files
 - Integration tests pass with synthetic temp-dir setup
+- Dog-fooding works: `npm run crap` runs crap4js against its own `src/` files with real coverage
+- `vitest.config.mjs` produces LCOV output for accurate per-function coverage fractions
+- 0 high-risk functions, 10 moderate in self-analysis
 
 ## Known Gaps (v1)
 

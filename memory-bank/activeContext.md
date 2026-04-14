@@ -2,28 +2,53 @@
 
 ## Current Focus
 
-Hardening test coverage and preparing for public npm release.
+All prompts (0–12) implemented. Project is fully functional, dog-fooded, and documented. Ready for publishing.
 
 ## Recently Completed
 
-- All six original build prompts (0–6) implemented
-- Core CRAP metric pipeline fully functional
-- CLI, LCOV parsing, AST complexity, report formatting all working
+- All twelve build/improvement prompts implemented and verified
+- Prompt 12: Added `vitest.config.mjs` with LCOV reporter — fixed N/A coverage in dog-food report
+- Updated all documentation (README, SKILL.md, CHANGELOG, memory-bank) to reflect current state
+- README now includes full LCOV setup guide for Vitest, Jest, c8/nyc
 
-## Recently Implemented (Prompts 7–11)
+## Project Files
 
-- ✅ `CRAP4JS_DEBUG_LCOV` env var test (mock via `vi.resetModules` + `vi.doMock`)
-- ✅ HTML fallback parser tests (5 cases: span parsing, attribute order, LCOV priority, empty/nonexistent dirs)
-- ✅ Hardened `dist/`/`build/` detection (regex matches anywhere in path, not just prefix)
-- ✅ npm packaging metadata (`files`, `keywords`, `repository`, `engines`, `bugs`, `homepage`, `LICENSE`)
-- ✅ publishing workflow documented in `README.md` and `CHANGELOG.md`
+```
+crap4js/
+├── src/
+│   ├── cli.mjs              # Thin shebang wrapper
+│   ├── core.mjs             # CLI orchestrator
+│   ├── complexity.mjs       # Babel AST walker, CC computation
+│   ├── coverage.mjs         # LCOV parser + HTML fallback
+│   ├── crap.mjs             # Formula + table formatter
+│   └── env.mjs              # Centralised env var access
+├── test/
+│   ├── crap.test.mjs        # 15 tests
+│   ├── coverage.test.mjs    # 16 tests
+│   ├── complexity.test.mjs  # 34 tests
+│   └── integration.test.mjs # 2 tests
+├── memory-bank/             # Design docs and progress tracking
+├── vitest.config.mjs        # Coverage: ['text', 'lcov']
+├── eslint.config.mjs        # Flat config, ESM
+├── package.json             # Scripts: test, crap, lint, lint:env
+├── README.md                # Full setup guide with LCOV config
+├── SKILL.md                 # Claude Code integration
+├── CHANGELOG.md             # Keep a Changelog format
+└── LICENSE                  # MIT
+```
+
+## Self-Analysis Results (npm run crap)
+
+- 26 functions analysed across 6 source files
+- 0 high risk (CRAP > 30), 10 moderate (CRAP 5–30)
+- Highest CRAP: `resolveName` at 26.2 (CC=25, 87.5% coverage)
+- All 67 tests passing
 
 ## Next Steps
 
-1. Implement improvement prompts 7–10 (test gaps + packaging)
-2. Verify all tests pass after changes
-3. Consider npm publish workflow and CI setup
-4. Future v2: class field initialisers, static blocks, callback name inference
+1. Publish to npm (`npm publish --access public`)
+2. Set up CI (GitHub Actions: test + lint + crap check)
+3. Future v2: class field initialisers, static blocks, callback name inference
 
 ## Architecture Decisions
 
@@ -31,3 +56,4 @@ Hardening test coverage and preparing for public npm release.
 - Coverage parsing exports internals (`parseLcov`, `normalisePath`, `suffixMatch`) for unit testing
 - `run()` function in `core.mjs` is exported separately from CLI for integration testing
 - All env var reads go through `src/env.mjs` — enforced by ESLint `no-restricted-syntax` rule
+- `vitest.config.mjs` configures LCOV output — required for crap4js to produce real coverage scores
