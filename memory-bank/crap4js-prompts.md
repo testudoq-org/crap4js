@@ -742,3 +742,119 @@ Verify:
 - `npm test` — all tests pass, no regression
 - `npm run crap` — text output unchanged
 ```
+
+## Prompt 14 — Security Review
+
+```
+Security review of crap4js. Do not implement changes — document findings
+and separate recommendations into two tiers:
+
+  A) Local (code + VS Code level) — things we can fix or add in this repo
+  B) External (GitHub / CI / third-party) — things configured outside the repo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 1. Purpose & Functionality
+
+crap4js is a CLI tool that computes CRAP scores for JS/TS functions.
+It parses source files (Babel), reads LCOV/HTML coverage data, and
+outputs risk reports (text, markdown, HTML) for CI and developer use.
+
+## 2. Current Security Posture
+
+- Environment variables centralised in src/env.mjs.
+- .env_schema documents expected vars; .gitignore includes .env.
+- Modular design — no file exceeds 500 lines.
+- HTML output uses escapeHtml() for XSS-safe rendering.
+- Test coverage exists for all major modules.
+
+## 3. Findings
+
+### Finding 1 — execSync command injection risk
+  src/core.mjs uses execSync(coverageCmd, ...) where coverageCmd
+  comes from package.json "crap.coverageCommand" or --coverage-cmd.
+  If a malicious package.json is present, arbitrary commands execute.
+  Risk: Medium (requires write access to package.json or CLI args).
+
+### Finding 2 — Directory traversal in coverageDir / sourceGlob
+  coverageDir and sourceGlob are read from package.json and CLI.
+  No validation prevents paths like "../../etc" or absolute paths
+  outside the project.
+  Risk: Low (tool runs locally with user permissions anyway).
+
+### Finding 3 — Dependency supply chain
+  @babel/parser, @babel/traverse, globby, commander are direct deps.
+  No lockfile integrity check or automated vulnerability scanning.
+  Risk: Medium (common npm supply-chain concern).
+
+### Finding 4 — HTML output injection surface
+  escapeHtml() covers &, <, >, " but not single quotes (').
+  Risk: Low (output is static file, not served by a web app).
+
+## 4. Recommendations
+
+### A) Local — Code & VS Code level
+
+  ┌─────────┬──────────────────────────────────────────────────────┐
+  │Priority │ Action                                    │ Status   │
+  ├─────────┼──────────────────────────────────────────────────────┤
+  │Critical │ Harden execSync: validate coverageCmd against an     │
+  │         │ allowlist of known runners (vitest, jest, c8, nyc,   │
+  │         │ npx) or at minimum reject shell metacharacters       │
+  │         │ (;, |, &&, ||, $, `) before execution.    │ ✅ DONE  │
+  ├─────────┼──────────────────────────────────────────────────────┤
+  │Critical │ Validate coverageDir: resolve to an absolute path,   │
+  │         │ confirm it is inside cwd, reject ".." traversal.     │
+  │         │                                           │ ✅ DONE  │
+  ├─────────┼──────────────────────────────────────────────────────┤
+  │Medium   │ Escape single quotes in escapeHtml(): add            │
+  │         │   .replace(/'/g, '&#39;')                            │
+  │         │ for defense-in-depth.                     │ ✅ DONE  │
+  ├─────────┼──────────────────────────────────────────────────────┤
+  │Medium   │ Add ESLint security plugin (eslint-plugin-security)  │
+  │         │ to the local lint config for static analysis.         │
+  │         │                                           │ ✅ DONE  │
+  ├─────────┼──────────────────────────────────────────────────────┤
+  │Low      │ Create SECURITY.md with contributor guidelines:      │
+  │         │ no secrets in code, how to report vulnerabilities,   │
+  │         │ required review for dependency additions. │ ✅ DONE  │
+  ├─────────┼──────────────────────────────────────────────────────┤
+  │Low      │ Add npm audit --audit-level=moderate as a local      │
+  │         │ script ("scripts": { "audit": "npm audit ..." })     │
+  │         │ so developers can run it manually.        │ ✅ DONE  │
+  └─────────┴──────────────────────────────────────────────────────┘
+
+### B) External — GitHub / CI / Third-party
+
+  ┌─────────┬──────────────────────────────────────────────────────┐
+  │Priority │ Action                                               │
+  ├─────────┼──────────────────────────────────────────────────────┤
+  │Critical │ Enable GitHub Dependabot or Snyk for automated       │
+  │         │ dependency vulnerability alerts and PRs.             │
+  ├─────────┼──────────────────────────────────────────────────────┤
+  │Medium   │ Add a CI workflow step that runs npm audit and       │
+  │         │ fails the build on high/critical vulnerabilities.    │
+  ├─────────┼──────────────────────────────────────────────────────┤
+  │Medium   │ Integrate semgrep or SonarQube in CI for deeper     │
+  │         │ static security analysis beyond ESLint.              │
+  ├─────────┼──────────────────────────────────────────────────────┤
+  │Medium   │ Require PR reviews for any changes to package.json  │
+  │         │ dependencies (GitHub branch protection + CODEOWNERS).│
+  ├─────────┼──────────────────────────────────────────────────────┤
+  │Low      │ Add a GitHub Actions workflow for periodic           │
+  │         │ npm audit / Trivy scans on a schedule (weekly).      │
+  ├─────────┼──────────────────────────────────────────────────────┤
+  │Low      │ Pin GitHub Actions versions by SHA to prevent        │
+  │         │ supply-chain attacks via compromised actions.         │
+  └─────────┴──────────────────────────────────────────────────────┘
+
+## 5. Summary
+
+No exposed secrets or monolithic files detected. Main risks are
+unsanitized CLI command execution and standard npm supply-chain
+concerns. The local fixes (A) can be implemented in-repo without
+external tooling. The external fixes (B) require GitHub settings,
+CI configuration, or third-party service setup.
+
+No code is modified by this prompt — it is a review document only.
+```

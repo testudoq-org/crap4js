@@ -12,6 +12,48 @@ import { Command } from 'commander';
 import { resolve } from 'path';
 import { pathToFileURL } from 'url';
 
+/** Known safe runner prefixes for coverage commands. */
+const ALLOWED_RUNNERS = ['vitest', 'jest', 'c8', 'nyc', 'npx', 'node', 'npm', 'pnpm', 'yarn'];
+
+/** Shell metacharacters that indicate command injection. */
+const SHELL_META = /[;|&$`(){}!<>\n\r]/;
+
+/**
+ * Validate a coverage command against injection risks.
+ * @param {string} cmd
+ * @throws {Error} if the command looks unsafe
+ */
+export function validateCoverageCmd(cmd) {
+  if (typeof cmd !== 'string' || cmd.trim().length === 0) {
+    throw new Error('[crap4js] Invalid coverage command: must be a non-empty string.');
+  }
+  if (SHELL_META.test(cmd)) {
+    throw new Error(`[crap4js] Unsafe coverage command — shell metacharacters are not allowed: ${cmd}`);
+  }
+  const firstToken = cmd.trim().split(/\s+/)[0].toLowerCase();
+  if (!ALLOWED_RUNNERS.some(r => firstToken === r || firstToken.endsWith(`/${r}`) || firstToken.endsWith(`\\${r}`))) {
+    throw new Error(`[crap4js] Unknown coverage runner "${firstToken}". Allowed: ${ALLOWED_RUNNERS.join(', ')}.`);
+  }
+}
+
+/**
+ * Validate that a coverage directory path is safe.
+ * Rejects relative paths containing ".." traversal segments.
+ * Absolute paths are allowed (user explicitly controls them).
+ * @param {string} dir
+ * @throws {Error} if the path is invalid or uses traversal
+ */
+export function validateCoverageDir(dir) {
+  if (typeof dir !== 'string' || dir.trim().length === 0) {
+    throw new Error('[crap4js] Invalid coverage directory: must be a non-empty string.');
+  }
+  // Only police relative paths — absolute paths are intentional
+  const isAbsolute = resolve(dir) === dir || /^[a-zA-Z]:[\\/]/.test(dir);
+  if (!isAbsolute && dir.split(/[\\/]/).includes('..')) {
+    throw new Error(`[crap4js] Coverage directory must not traverse outside the project: ${dir}`);
+  }
+}
+
 /**
  * Read the "crap" config block from package.json in cwd.
  * @returns {{ coverageCommand: string, coverageDir: string, sourceGlob: string[] }}
@@ -82,6 +124,12 @@ export function run(options = {}) {
   const filters = options.filters || [];
   const shouldDelete = options.delete !== false;
   const shouldRunCoverage = options.runCoverage !== false;
+
+  // Validate inputs before any side effects
+  validateCoverageDir(coverageDir);
+  if (shouldRunCoverage) {
+    validateCoverageCmd(coverageCmd);
+  }
 
   // Step 2: Delete coverage dir unless --no-delete
   if (shouldDelete && existsSync(coverageDir)) {

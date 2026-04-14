@@ -98,6 +98,22 @@ Tick each box before shipping. Items marked [v2] are known gaps deferred to the 
 - [x] Null-coverage entries sorted last
 - [x] Table column widths match crap4clj output (Function 30, File 36, CC 4, Cov% 8, CRAP 8)
 - [x] Long names truncated with `…`
+- [x] Risk column: low (<5), moderate (5–30), high (>30)
+- [x] Risk summary line at bottom of report
+- [x] Multi-format: text (default), markdown, html
+- [x] HTML output is full HTML5 document (DOCTYPE, head, style, body)
+
+---
+
+## Security hardening
+
+- [x] `validateCoverageCmd()`: runner allowlist (vitest, jest, c8, nyc, npx, node, npm, pnpm, yarn)
+- [x] `validateCoverageCmd()`: shell metacharacter rejection (;, |, &, $, `, etc.)
+- [x] `validateCoverageDir()`: reject relative paths with `..` traversal
+- [x] `escapeHtml()`: escapes `&`, `<`, `>`, `"`, `'`
+- [x] `eslint-plugin-security` integrated in ESLint config
+- [x] `SECURITY.md` with contributor guidelines and vulnerability reporting
+- [x] `npm run audit:security` script for manual dependency checks
 - [x] Risk summary line after table
 - [x] Filter by file path fragment — OR logic, CLI args
 

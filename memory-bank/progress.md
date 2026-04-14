@@ -22,6 +22,9 @@
 | 10 — npm packaging metadata | `package.json` | ✅ Complete | `files`, `keywords`, `repository`, `engines`, `LICENSE` |
 | 11 — Dog-food crap4js | `README.md`, `CHANGELOG.md` | ✅ Complete | Dog-food instructions, publishing/dev docs, changelog |
 | 12 — Vitest LCOV config | `vitest.config.mjs`, `package.json`, `README.md` | ✅ Complete | Added LCOV reporter so dog-fooding produces real scores |
+| 13 — Risk column + multi-format | `src/crap.mjs`, `src/core.mjs`, `test/crap.test.mjs` | ✅ Complete | Risk column (low/moderate/high), `--format text\|markdown\|html` CLI option |
+| 13A — Fix HTML output | `src/crap.mjs`, `src/core.mjs`, `test/crap.test.mjs` | ✅ Complete | Full HTML5 document, coverage stdout→stderr for non-text formats |
+| 14A — Security hardening (local) | `src/core.mjs`, `src/crap.mjs`, `eslint.config.mjs`, `SECURITY.md` | ✅ Complete | validateCoverageCmd, validateCoverageDir, escapeHtml single-quote, eslint-plugin-security, SECURITY.md, npm audit script |
 
 ## What Works
 
@@ -30,11 +33,14 @@
 - LCOV parsing with path normalisation, suffix matching, and diagnostic warnings
 - Babel AST-based complexity analysis for JS/TS/JSX
 - Exit code 1 for CI integration when any function scores > 30
-- All 67 unit tests pass across 4 test files
-- Integration tests pass with synthetic temp-dir setup
+- All 87 tests pass across 4 test files
+- Integration tests pass with synthetic temp-dir setup + validation tests
 - Dog-fooding works: `npm run crap` runs crap4js against its own `src/` files with real coverage
 - `vitest.config.mjs` produces LCOV output for accurate per-function coverage fractions
-- 0 high-risk functions, 10 moderate in self-analysis
+- Multi-format output: text (default), markdown, HTML (full HTML5 document)
+- Security hardening: coverageCmd allowlist, coverageDir traversal prevention, HTML entity escaping
+- eslint-plugin-security integrated for static security analysis
+- 0 high-risk functions, 11 moderate in self-analysis
 
 ## Known Gaps (v1)
 
@@ -43,3 +49,4 @@
 - Callback names show as `<anonymous:line>` (future: infer from parent call)
 - No dedicated CLI-level tests exercising `src/cli.mjs` via `spawnSync`
 - No monorepo support for `sourceGlob` root-relative paths
+- Prompt 14B (external security — GitHub/CI/Dependabot) not yet implemented

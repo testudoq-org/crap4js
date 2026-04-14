@@ -2,7 +2,66 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { run } from '../src/core.mjs';
+import { run, validateCoverageCmd, validateCoverageDir } from '../src/core.mjs';
+
+// ── Validation tests ────────────────────────────────────────────────
+
+describe('validateCoverageCmd', () => {
+  it('accepts known runners', () => {
+    expect(() => validateCoverageCmd('vitest run --coverage')).not.toThrow();
+    expect(() => validateCoverageCmd('jest --coverage')).not.toThrow();
+    expect(() => validateCoverageCmd('npx vitest run')).not.toThrow();
+    expect(() => validateCoverageCmd('c8 node index.js')).not.toThrow();
+    expect(() => validateCoverageCmd('nyc mocha')).not.toThrow();
+    expect(() => validateCoverageCmd('node scripts/test.js')).not.toThrow();
+    expect(() => validateCoverageCmd('npm test')).not.toThrow();
+    expect(() => validateCoverageCmd('pnpm test')).not.toThrow();
+    expect(() => validateCoverageCmd('yarn test')).not.toThrow();
+  });
+
+  it('rejects shell metacharacters', () => {
+    expect(() => validateCoverageCmd('vitest; rm -rf /')).toThrow(/metacharacters/);
+    expect(() => validateCoverageCmd('vitest | cat /etc/passwd')).toThrow(/metacharacters/);
+    expect(() => validateCoverageCmd('vitest && echo pwned')).toThrow(/metacharacters/);
+    expect(() => validateCoverageCmd('vitest $(whoami)')).toThrow(/metacharacters/);
+    expect(() => validateCoverageCmd('vitest `whoami`')).toThrow(/metacharacters/);
+  });
+
+  it('rejects unknown runners', () => {
+    expect(() => validateCoverageCmd('curl http://evil.com')).toThrow(/Unknown coverage runner/);
+    expect(() => validateCoverageCmd('rm -rf /')).toThrow(/Unknown coverage runner/);
+    expect(() => validateCoverageCmd('python exploit.py')).toThrow(/Unknown coverage runner/);
+  });
+
+  it('rejects empty or non-string input', () => {
+    expect(() => validateCoverageCmd('')).toThrow(/non-empty string/);
+    expect(() => validateCoverageCmd('   ')).toThrow(/non-empty string/);
+  });
+});
+
+describe('validateCoverageDir', () => {
+  it('accepts simple relative paths', () => {
+    expect(() => validateCoverageDir('coverage')).not.toThrow();
+    expect(() => validateCoverageDir('build/coverage')).not.toThrow();
+  });
+
+  it('accepts absolute paths', () => {
+    const absPath = join(tmpdir(), 'crap4js-test-coverage');
+    expect(() => validateCoverageDir(absPath)).not.toThrow();
+  });
+
+  it('rejects relative paths with traversal', () => {
+    expect(() => validateCoverageDir('../outside')).toThrow(/traverse/);
+    expect(() => validateCoverageDir('foo/../../outside')).toThrow(/traverse/);
+  });
+
+  it('rejects empty or non-string input', () => {
+    expect(() => validateCoverageDir('')).toThrow(/non-empty string/);
+    expect(() => validateCoverageDir('   ')).toThrow(/non-empty string/);
+  });
+});
+
+// ── Integration tests ───────────────────────────────────────────────
 
 describe('integration', () => {
   let tempDir;

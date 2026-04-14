@@ -194,6 +194,16 @@ describe('formatReport', () => {
     expect(report).toMatch(/&lt;script&gt;/);
   });
 
+  it('escapes single quotes in HTML output', () => {
+    const htmlEntries = [
+      { name: "it's", file: "o'reilly.mjs", cc: 1, coverage: 1.0, crap: 1 },
+    ];
+    const report = formatReport(htmlEntries, 'html');
+    expect(report).not.toMatch(/it's/);
+    expect(report).toMatch(/it&#39;s/);
+    expect(report).toMatch(/o&#39;reilly\.mjs/);
+  });
+
   it('includes risk summary in HTML', () => {
     const report = formatReport(entries, 'html');
     expect(report).toMatch(/<p>1 functions at high risk, 1 at moderate\.<\/p>/);

@@ -1,7 +1,9 @@
 import js from '@eslint/js';
+import security from 'eslint-plugin-security';
 
 export default [
   js.configs.recommended,
+  security.configs.recommended,
   {
     files: ['src/**/*.{js,mjs}', 'test/**/*.{js,mjs}'],
     languageOptions: {
@@ -26,6 +28,12 @@ export default [
     files: ['src/env.mjs'],
     rules: {
       'no-restricted-syntax': 'off',
+    },
+  },
+  {
+    files: ['test/**/*.{js,mjs}'],
+    rules: {
+      'security/detect-non-literal-fs-filename': 'off',
     },
   },
 ];
