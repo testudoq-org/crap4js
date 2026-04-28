@@ -44,12 +44,34 @@ const CC_NODE_TYPES = new Set([
  */
 function classMethodName(path) {
   const node = path.node;
-  const methodName = node.type === 'ClassPrivateMethod'
-    ? `#${node.key.id.name}`
-    : (node.key.name || node.key.value || String(node.key));
-  const parentClass = path.findParent(p => p.isClassDeclaration() || p.isClassExpression());
-  const className = parentClass?.node?.id?.name || '<anonymous>';
+  const methodName = getClassMethodName(node);
+  const className = resolveClassName(path);
   return `${className}.${methodName}`;
+}
+
+function getClassMethodName(node) {
+  if (node.type === 'ClassPrivateMethod') {
+    return `#${node.key.id.name}`;
+  }
+  return resolveKeyName(node.key);
+}
+
+function resolveKeyName(key) {
+  if (key.name) return key.name;
+  if (key.value) return key.value;
+  return String(key);
+}
+
+function resolveClassName(path) {
+  const parentClass = path.findParent(p => p.isClassDeclaration() || p.isClassExpression());
+  return classNameFromParent(parentClass);
+}
+
+function classNameFromParent(parentClass) {
+  if (!parentClass) return '<anonymous>';
+  const id = parentClass.node?.id;
+  if (!id || !id.name) return '<anonymous>';
+  return id.name;
 }
 
 function objectMethodName(path) {
@@ -59,16 +81,20 @@ function objectMethodName(path) {
 
 function variableDeclaratorName(path) {
   const parent = path.parent;
-  return parent && parent.type === 'VariableDeclarator' && parent.id
-    ? parent.id.name
-    : null;
+  if (!parent || parent.type !== 'VariableDeclarator' || !parent.id) return null;
+  return parent.id.name;
 }
 
 function assignmentExpressionName(path) {
   const parent = path.parent;
-  return parent && parent.type === 'AssignmentExpression' && parent.left
-    ? parent.left.name || null
-    : null;
+  if (!parent || parent.type !== 'AssignmentExpression') return null;
+  return resolveAssignmentTargetName(parent.left);
+}
+
+function resolveAssignmentTargetName(left) {
+  if (!left) return null;
+  if (left.name) return left.name;
+  return null;
 }
 
 function functionExpressionName(node) {

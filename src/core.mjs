@@ -26,16 +26,9 @@ const SHELL_META = /[;|&$`(){}!<>\n\r]/;
  * @throws {Error} if the command looks unsafe
  */
 export function validateCoverageCmd(cmd) {
-  if (typeof cmd !== 'string' || cmd.trim().length === 0) {
-    throw new Error('[crap4js] Invalid coverage command: must be a non-empty string.');
-  }
-  if (SHELL_META.test(cmd)) {
-    throw new Error(`[crap4js] Unsafe coverage command — shell metacharacters are not allowed: ${cmd}`);
-  }
-  const firstToken = cmd.trim().split(/\s+/)[0].toLowerCase();
-  if (!ALLOWED_RUNNERS.some(r => firstToken === r || firstToken.endsWith(`/${r}`) || firstToken.endsWith(`\\${r}`))) {
-    throw new Error(`[crap4js] Unknown coverage runner "${firstToken}". Allowed: ${ALLOWED_RUNNERS.join(', ')}.`);
-  }
+  validateNonEmptyString(cmd, 'coverage command');
+  validateNoShellMetacharacters(cmd);
+  validateAllowedCoverageRunner(cmd);
 }
 
 /**
@@ -46,12 +39,34 @@ export function validateCoverageCmd(cmd) {
  * @throws {Error} if the path is invalid or uses traversal
  */
 export function validateCoverageDir(dir) {
-  if (typeof dir !== 'string' || dir.trim().length === 0) {
-    throw new Error('[crap4js] Invalid coverage directory: must be a non-empty string.');
-  }
-
+  validateNonEmptyString(dir, 'coverage directory');
   if (isAbsolutePath(dir) || isDrivePath(dir)) return;
   throwIfTraversal(dir);
+}
+
+function validateNonEmptyString(value, label) {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`[crap4js] Invalid ${label}: must be a non-empty string.`);
+  }
+}
+
+function validateNoShellMetacharacters(cmd) {
+  if (SHELL_META.test(cmd)) {
+    throw new Error(`[crap4js] Unsafe coverage command — shell metacharacters are not allowed: ${cmd}`);
+  }
+}
+
+function validateAllowedCoverageRunner(cmd) {
+  const firstToken = cmd.trim().split(/\s+/)[0].toLowerCase();
+  if (!allowedCoverageRunner(firstToken)) {
+    throw new Error(`[crap4js] Unknown coverage runner "${firstToken}". Allowed: ${ALLOWED_RUNNERS.join(', ')}.`);
+  }
+}
+
+function allowedCoverageRunner(firstToken) {
+  return ALLOWED_RUNNERS.some(r =>
+    firstToken === r || firstToken.endsWith(`/${r}`) || firstToken.endsWith(`\\${r}`)
+  );
 }
 
 function throwIfTraversal(dir) {
@@ -65,11 +80,11 @@ function isAbsolutePath(dir) {
 }
 
 function isDrivePath(dir) {
-  return /^[a-zA-Z]:[\/]/.test(dir);
+  return /^[a-zA-Z]:\//.test(dir);
 }
 
 function hasTraversal(dir) {
-  return dir.split(/[\/]/).includes('..');
+  return dir.split('/').includes('..');
 }
 
 /**
@@ -105,18 +120,26 @@ function loadPackageJson() {
 }
 
 function executeCoverageCommand(coverageCmd, format) {
-  const covStdio = format === 'text'
-    ? 'inherit'
-    : ['inherit', process.stderr, 'inherit'];
+  const covStdio = coverageStdio(format);
   try {
     execSync(coverageCmd, { stdio: covStdio });
     return false;
   } catch (err) {
-    console.error('[crap4js] Warning: coverage command exited with non-zero status. Continuing with partial coverage.');
-    if (err && err.status != null) {
-      console.error(`[crap4js] Warning: coverage command exited with status ${err.status}.`);
-    }
+    reportCoverageCommandError(err);
     return true;
+  }
+}
+
+function coverageStdio(format) {
+  return format === 'text'
+    ? 'inherit'
+    : ['inherit', process.stderr, 'inherit'];
+}
+
+function reportCoverageCommandError(err) {
+  console.error('[crap4js] Warning: coverage command exited with non-zero status. Continuing with partial coverage.');
+  if (err?.status != null) {
+    console.error(`[crap4js] Warning: coverage command exited with status ${err.status}.`);
   }
 }
 
@@ -254,16 +277,23 @@ function maybeDeleteCoverageDir(coverageDir, shouldDelete) {
 }
 
 function finalizeRunOutput(entries, coverageCommandFailed, coverageLoaded, reportFile, format) {
-  let output = formatReport(entries, format);
-  const hasHighRisk = entries.some(e => e.crap != null && e.crap > 30);
-  const shouldError = coverageCommandFailed && !coverageLoaded;
+  const output = renderFinalOutput(entries, coverageCommandFailed, coverageLoaded, reportFile, format);
+  return { output, exitCode: finalRunExitCode(entries, coverageCommandFailed, coverageLoaded) };
+}
 
-  if (shouldError) {
+function renderFinalOutput(entries, coverageCommandFailed, coverageLoaded, reportFile, format) {
+  let output = formatReport(entries, format);
+  if (coverageCommandFailed && !coverageLoaded) {
     output = '[crap4js] ERROR: Coverage command failed and no coverage data was loaded. Fix the workspace tests/coverage pipeline and rerun.\n\n' + output;
   }
 
   writeReportFile(output, reportFile);
-  return { output, exitCode: shouldError ? 1 : (hasHighRisk ? 1 : 0) };
+  return output;
+}
+
+function finalRunExitCode(entries, coverageCommandFailed, coverageLoaded) {
+  if (coverageCommandFailed && !coverageLoaded) return 1;
+  return entries.some(e => e.crap != null && e.crap > 30) ? 1 : 0;
 }
 
 export function run(options = {}) {

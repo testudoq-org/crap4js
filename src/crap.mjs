@@ -27,12 +27,18 @@ export function riskLevel(score) {
 
 /** Sort entries: descending by CRAP, null-coverage last. */
 function sortEntries(entries) {
-  return [...entries].sort((a, b) => {
-    if (a.crap == null && b.crap == null) return 0;
-    if (a.crap == null) return 1;
-    if (b.crap == null) return -1;
-    return b.crap - a.crap;
-  });
+  return [...entries].sort(compareEntries);
+}
+
+function compareEntries(a, b) {
+  if (a.crap == null) return compareNullA(a, b);
+  if (b.crap == null) return -1;
+  return b.crap - a.crap;
+}
+
+function compareNullA(a, b) {
+  if (b.crap == null) return 0;
+  return 1;
 }
 
 /** Count high/moderate risk entries. */
