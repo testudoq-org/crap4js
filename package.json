@@ -1,6 +1,6 @@
 {
   "name": "crap4js",
-  "version": "1.0.1-beta.2",
+  "version": "1.0.1-beta.3",
   "description": "CRAP metric for JavaScript/TypeScript — identifies complex, under-tested code",
   "type": "module",
   "bin": {
@@ -14,7 +14,8 @@
   ],
   "scripts": {
     "test": "vitest run",
-    "crap": "node src/cli.mjs",
+    "crap": "node src/cli.mjs --report-file CRAPReport.md",
+    "mutation": "npx stryker run --config stryker.conf.mjs",
     "lint": "eslint src/ test/",
     "lint:env": "varlock check",
     "audit:security": "npm audit --audit-level=moderate"
@@ -59,6 +60,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/html-reporter": "^3.1.0",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
     "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.0.0",
     "eslint-plugin-security": "^4.0.0",

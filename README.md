@@ -1,6 +1,6 @@
 # crap4js
 
-A JavaScript/TypeScript port of the [CRAP metric](https://github.com/unclebob/crap4clj) — **C**hange **R**isk **A**nti-**P**atterns. Identifies functions that are both complex and poorly tested, the most dangerous code to change. Based on Uncle Bob's formula: `CRAP(fn) = CC² × (1 - coverage)³ + CC`.
+A JavaScript/TypeScript port of the [CRAP metric](https://github.com/unclebob/crap4clj) — **C**hange **R**isk **A**nalysis and **P**redictions. Identifies functions that are both complex and poorly tested, the most dangerous code to change. Based on Uncle Bob's formula: `CRAP(fn) = CC² × (1 - coverage)³ + CC`.
 
 ## Quick Start
 
@@ -276,3 +276,8 @@ crap4js includes a `SKILL.md` for use as an AI coding assistant skill. Add it to
 ```
 
 Then ask GitHub Copilot or your AI assistant for a "CRAP report" and it will know how to set up and run the tool.
+
+## References
+
+- Original CRAP metric paper by Alberto Savoia (https://www.artima.com/weblogs/viewpost.jsp?thread=210575)
+- Cyclomatic Complexity on Wikipedia (https://en.wikipedia.org/wiki/Cyclomatic_complexity)

@@ -186,6 +186,11 @@ describe('complexity.mjs', () => {
       expect(fns[0].name).toBe('handler');
     });
 
+    it('arrow assigned by assignment expression: uses target variable name', () => {
+      const fns = extractFunctions('foo = () => {};', file);
+      expect(fns[0].name).toBe('foo');
+    });
+
     it('class method: uses ClassName.methodName', () => {
       const fns = extractFunctions(`
         class Validator {

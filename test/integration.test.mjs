@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'fs';
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { run, validateCoverageCmd, validateCoverageDir } from '../src/core.mjs';
@@ -137,6 +137,34 @@ describe('integration', () => {
 
     // Exit code should be 0 (no high-risk scored functions — null coverage doesn't count)
     expect(result.exitCode).toBe(0);
+  });
+
+  it('writes a dedicated report file when reportFile is provided', () => {
+    const srcDir = join(tempDir, 'src');
+    mkdirSync(srcDir, { recursive: true });
+    writeFileSync(join(srcDir, 'good.mjs'), 'export function good() { return 1; }');
+
+    const covDir = join(tempDir, 'coverage');
+    mkdirSync(covDir, { recursive: true });
+    writeFileSync(join(covDir, 'lcov.info'), [`SF:${join(srcDir, 'good.mjs').replace(/\\/g, '/')}`, 'DA:1,1', 'DA:2,1', 'end_of_record'].join('\n'));
+
+    const reportFile = join(tempDir, 'CRAPReport.md');
+    const result = run({
+      filters: [],
+      coverageDir: covDir,
+      sourceGlob: [join(srcDir, '**/*.mjs').replace(/\\/g, '/')],
+      delete: false,
+      runCoverage: false,
+      format: 'markdown',
+      reportFile,
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(existsSync(reportFile)).toBe(true);
+    const reportContents = readFileSync(reportFile, 'utf8');
+    expect(reportContents).toBe(result.output);
+    expect(reportContents).toContain('## CRAP Report');
+    expect(reportContents).toContain('0 functions at high risk, 0 at moderate.');
   });
 
   it('returns exit code 1 when a function scores > 30', () => {

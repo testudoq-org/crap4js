@@ -42,53 +42,79 @@ const CC_NODE_TYPES = new Set([
  * @param {import('@babel/traverse').NodePath} path
  * @returns {string}
  */
+function classMethodName(path) {
+  const node = path.node;
+  const methodName = getClassMethodName(node);
+  const className = resolveClassName(path);
+  return `${className}.${methodName}`;
+}
+
+function getClassMethodName(node) {
+  if (node.type === 'ClassPrivateMethod') {
+    return `#${node.key.id.name}`;
+  }
+  return resolveKeyName(node.key);
+}
+
+function resolveKeyName(key) {
+  if (key.name) return key.name;
+  if (key.value) return key.value;
+  return String(key);
+}
+
+function resolveClassName(path) {
+  const parentClass = path.findParent(p => p.isClassDeclaration() || p.isClassExpression());
+  return classNameFromParent(parentClass);
+}
+
+function classNameFromParent(parentClass) {
+  if (!parentClass) return '<anonymous>';
+  const id = parentClass.node?.id;
+  if (!id || !id.name) return '<anonymous>';
+  return id.name;
+}
+
+function objectMethodName(path) {
+  const key = path.node.key;
+  return key.name || key.value || String(key);
+}
+
+function variableDeclaratorName(path) {
+  const parent = path.parent;
+  if (!parent || parent.type !== 'VariableDeclarator' || !parent.id) return null;
+  return parent.id.name;
+}
+
+function assignmentExpressionName(path) {
+  const parent = path.parent;
+  if (!parent || parent.type !== 'AssignmentExpression') return null;
+  return resolveAssignmentTargetName(parent.left);
+}
+
+function resolveAssignmentTargetName(left) {
+  if (!left) return null;
+  if (left.name) return left.name;
+  return null;
+}
+
+function functionExpressionName(node) {
+  return node.id ? node.id.name : null;
+}
+
+const NAME_RESOLVERS = {
+  FunctionDeclaration: (path) => path.node.id?.name ?? null,
+  ClassMethod: classMethodName,
+  ClassPrivateMethod: classMethodName,
+  ObjectMethod: objectMethodName,
+  FunctionExpression: (path) => functionExpressionName(path.node) || variableDeclaratorName(path),
+  ArrowFunctionExpression: (path) => variableDeclaratorName(path) || assignmentExpressionName(path),
+};
+
 function resolveName(path) {
   const node = path.node;
-
-  // FunctionDeclaration with id
-  if (node.type === 'FunctionDeclaration' && node.id) {
-    return node.id.name;
-  }
-
-  // ClassMethod / ClassPrivateMethod → ClassName.methodName
-  if (node.type === 'ClassMethod' || node.type === 'ClassPrivateMethod') {
-    const methodName = node.type === 'ClassPrivateMethod'
-      ? `#${node.key.id.name}`
-      : (node.key.name || node.key.value || String(node.key));
-    // Walk up to ClassDeclaration/ClassExpression
-    let current = path.parentPath;
-    while (current) {
-      if (current.node.type === 'ClassDeclaration' || current.node.type === 'ClassExpression') {
-        const className = current.node.id ? current.node.id.name : '<anonymous>';
-        return `${className}.${methodName}`;
-      }
-      current = current.parentPath;
-    }
-    return methodName;
-  }
-
-  // ObjectMethod → property key name
-  if (node.type === 'ObjectMethod') {
-    return node.key.name || node.key.value || String(node.key);
-  }
-
-  // Arrow or FunctionExpression in VariableDeclarator
-  if (path.parent && path.parent.type === 'VariableDeclarator' && path.parent.id) {
-    return path.parent.id.name;
-  }
-
-  // Arrow or FunctionExpression in assignment: foo = function() {}
-  if (path.parent && path.parent.type === 'AssignmentExpression' && path.parent.left) {
-    if (path.parent.left.name) return path.parent.left.name;
-  }
-
-  // FunctionExpression with id (named expression)
-  if (node.type === 'FunctionExpression' && node.id) {
-    return node.id.name;
-  }
-
-  // Fallback: anonymous with line number
-  return `<anonymous:${node.loc ? node.loc.start.line : '?'}>`;
+  const resolver = NAME_RESOLVERS[node.type];
+  const resolved = resolver?.(path);
+  return resolved || `<anonymous:${node.loc?.start.line ?? '?'}>`;
 }
 
 /**
@@ -96,6 +122,20 @@ function resolveName(path) {
  * @param {import('@babel/traverse').NodePath} functionPath
  * @returns {number}
  */
+const LOGICAL_OPERATORS = new Set(['&&', '||', '??']);
+const ASSIGNMENT_OPERATORS = new Set(['||=', '&&=', '??=']);
+
+const COMPLEXITY_HANDLERS = {
+  SwitchCase: (node) => node.test !== null ? 1 : 0,
+  LogicalExpression: (node) => LOGICAL_OPERATORS.has(node.operator) ? 1 : 0,
+  AssignmentExpression: (node) => ASSIGNMENT_OPERATORS.has(node.operator) ? 1 : 0,
+};
+
+function nodeComplexity(node) {
+  if (CC_NODE_TYPES.has(node.type)) return 1;
+  return COMPLEXITY_HANDLERS[node.type]?.(node) || 0;
+}
+
 function countCC(functionPath) {
   let cc = 1; // base complexity
 
@@ -103,38 +143,12 @@ function countCC(functionPath) {
     enter(innerPath) {
       const node = innerPath.node;
 
-      // Stop at nested function boundaries
       if (FUNCTION_TYPES.has(node.type) && innerPath !== functionPath) {
         innerPath.skip();
         return;
       }
 
-      // Standard CC nodes
-      if (CC_NODE_TYPES.has(node.type)) {
-        // For SwitchCase, only count non-default cases
-        cc++;
-        return;
-      }
-
-      // SwitchCase: +1 per case with test (not default)
-      if (node.type === 'SwitchCase' && node.test !== null) {
-        cc++;
-        return;
-      }
-
-      // LogicalExpression: &&, ||, ??
-      if (node.type === 'LogicalExpression' &&
-          (node.operator === '&&' || node.operator === '||' || node.operator === '??')) {
-        cc++;
-        return;
-      }
-
-      // Logical assignment operators: ||=, &&=, ??=
-      if (node.type === 'AssignmentExpression' &&
-          (node.operator === '||=' || node.operator === '&&=' || node.operator === '??=')) {
-        cc++;
-        return;
-      }
+      cc += nodeComplexity(node);
     },
   });
 
