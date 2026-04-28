@@ -1,15 +1,17 @@
 /**
  * core.mjs — CLI orchestrator for crap4js
  */
+/* eslint-env node */
+/* global console, process */
 
 import { extractFunctions } from './complexity.mjs';
 import { loadCoverage } from './coverage.mjs';
 import { crapScore, formatReport } from './crap.mjs';
 import { globbySync } from 'globby';
 import { execSync } from 'child_process';
-import { readFileSync, rmSync, existsSync } from 'fs';
+import { readFileSync, rmSync, existsSync, writeFileSync, mkdirSync } from 'fs';
 import { Command } from 'commander';
-import { resolve } from 'path';
+import { dirname, resolve } from 'path';
 import { pathToFileURL } from 'url';
 
 /** Known safe runner prefixes for coverage commands. */
@@ -221,7 +223,28 @@ export function run(options = {}) {
 
   if (coverageCommandFailed && !coverageLoaded) {
     output = '[crap4js] ERROR: Coverage command failed and no coverage data was loaded. Fix the workspace tests/coverage pipeline and rerun.\n\n' + output;
+    if (options.reportFile) {
+      const reportPath = resolve(options.reportFile);
+      const reportDir = dirname(reportPath);
+      try {
+        mkdirSync(reportDir, { recursive: true });
+        writeFileSync(reportPath, output, 'utf8');
+      } catch (err) {
+        console.error(`[crap4js] Warning: could not write report file ${reportPath}: ${err.message}`);
+      }
+    }
     return { output, exitCode: 1 };
+  }
+
+  if (options.reportFile) {
+    const reportPath = resolve(options.reportFile);
+    const reportDir = dirname(reportPath);
+    try {
+      mkdirSync(reportDir, { recursive: true });
+      writeFileSync(reportPath, output, 'utf8');
+    } catch (err) {
+      console.error(`[crap4js] Warning: could not write report file ${reportPath}: ${err.message}`);
+    }
   }
 
   return { output, exitCode: hasHighRisk ? 1 : 0 };
@@ -237,6 +260,7 @@ export function cli(argv) {
     .argument('[filters...]', 'filter by file path fragment (OR logic)')
     .option('--coverage-dir <dir>', 'coverage directory')
     .option('--coverage-cmd <cmd>', 'coverage command')
+    .option('--report-file <path>', 'write a dedicated report file')
     .option('--no-delete', 'skip deleting coverage dir before run')
     .option('--format <format>', 'output format: text, markdown, html', 'text')
     .action((filters, opts) => {
@@ -244,6 +268,7 @@ export function cli(argv) {
         filters,
         coverageDir: opts.coverageDir,
         coverageCmd: opts.coverageCmd,
+        reportFile: opts.reportFile,
         delete: opts.delete,
         format: opts.format,
       });

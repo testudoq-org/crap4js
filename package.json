@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "test": "vitest run",
-    "crap": "node src/cli.mjs",
+    "crap": "node src/cli.mjs --report-file CRAPReport.md",
     "lint": "eslint src/ test/",
     "lint:env": "varlock check",
     "audit:security": "npm audit --audit-level=moderate"

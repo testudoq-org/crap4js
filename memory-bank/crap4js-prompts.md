@@ -1,4 +1,3 @@
-
 # crap4js — Build Prompts
 
 One prompt per module, in build order. Each prompt is self-contained: paste it into a fresh Claude Code session with `crap4js-design.md` attached as context.
@@ -581,26 +580,26 @@ Fix:
        },
      },
    });
-   ```
+```
 
 2. Add `"crap": "crap4js"` to the `scripts` block in `package.json`
    so that `npm run crap` works out of the box.
-
 3. Add `@vitest/coverage-v8` to `devDependencies` if not already present
    (it is the coverage provider Vitest v3 uses for v8).
-
 4. Run `npm run crap` and verify:
+
    - `coverage/lcov.info` is generated
    - All functions show numeric Cov% and CRAP values (no N/A)
    - The report matches expected scores
-
 5. Update `README.md` Troubleshooting section to include:
+
    - "N/A coverage: ensure your test runner is configured to produce LCOV
      output. For Vitest, add `reporter: ['text', 'lcov']` to your coverage
      config in `vitest.config.mjs`."
 
 Do not change coverage.mjs or any other source logic. This is purely a
 configuration fix — the tool works correctly when LCOV data is present.
+
 ```
 
 ---
@@ -608,6 +607,7 @@ configuration fix — the tool works correctly when LCOV data is present.
 ## Prompt 13 — Risk column + multi-format output (text, markdown, HTML)
 
 ```
+
 Add a Risk column to the CRAP report and support three output formats:
 plain text (default), markdown, and HTML.
 
@@ -616,6 +616,7 @@ plain text (default), markdown, and HTML.
 Add a "Risk" column as the last column in the report table.
 
 Changes to src/crap.mjs:
+
 1. Add COL_RISK = 10 constant alongside the existing column width constants.
 2. In the header row, append "Risk" right-padded to COL_RISK.
 3. In each data row, append the result of riskLevel(entry.crap):
@@ -626,10 +627,12 @@ Changes to src/crap.mjs:
 
 Expected text output after this change:
 
-  CRAP Report
-  ===========
-  Function                       File                                   CC     Cov%     CRAP  Risk
-  -------------------------------------------------------------------------------------------------
+CRAP Report
+===========
+
+Function                       File                                   CC     Cov%     CRAP  Risk
+------------------------------------------------------------------------------------------------
+
   resolveName                    src/complexity.mjs                     25    87.5%     26.2  moderate
   simpleFn                       src/crap.mjs                            1   100.0%      1.0  low
   unknownFn                      src/util/helpers.mjs                    3      N/A      N/A  N/A
@@ -641,6 +644,7 @@ Expected text output after this change:
 Add a `format` parameter to formatReport() and a --format CLI option.
 
 Changes to src/crap.mjs:
+
 1. Change signature: formatReport(entries, format = 'text')
 2. format accepts: 'text' (default), 'markdown', 'html'
 3. Text format: current fixed-width table (with the new Risk column from Part A)
@@ -652,35 +656,38 @@ Changes to src/crap.mjs:
    - Title "CRAP Report" as a markdown heading (## CRAP Report)
    - Risk summary as a paragraph after the table
 5. HTML format:
-   - Complete <table> with <thead> and <tbody>
+   - Complete `<table>` with `<thead>` and `<tbody>`
    - Risk cells get a CSS class: class="risk-low", class="risk-moderate",
      class="risk-high", or class="risk-na"
-   - Wrap in a minimal <div class="crap-report"> container
-   - Include a <style> block with basic colours:
+   - Wrap in a minimal `<div class="crap-report">` container
+   - Include a `<style>` block with basic colours:
      .risk-low { color: green; }
      .risk-moderate { color: orange; }
      .risk-high { color: red; font-weight: bold; }
-   - Risk summary as a <p> after the table
+   - Risk summary as a `<p>` after the table
    - Do NOT generate a full HTML page — just the fragment
      (users embed it in their own pages or CI reports)
 
 Changes to src/core.mjs:
+
 1. Pass options.format through to formatReport(entries, format)
 2. The run() function signature already accepts an options object — add format
 
 Changes to CLI (src/core.mjs cli()):
+
 1. Add --format <text|markdown|html> option (default: 'text')
 2. Pass opts.format to run()
 
 ## Tests (test/crap.test.mjs)
 
 Add tests for:
+
 1. Text format includes Risk column with correct values (low, moderate, high, N/A)
 2. Markdown format produces valid pipe table with header, alignment row, data
 3. Markdown format sorts same as text (descending CRAP, null last)
-4. HTML format produces <table> with correct structure
+4. HTML format produces `<table>` with correct structure
 5. HTML format includes risk CSS classes on risk cells
-6. HTML format includes <style> block
+6. HTML format includes `<style>` block
 7. Default format is 'text' (backward compatible)
 8. Risk summary appears in all three formats
 
@@ -692,27 +699,29 @@ Add tests for:
   (formatReport(entries) with no format arg must produce text)
 - The text format column widths for existing columns must not change
   (Function 30, File 36, CC 4, Cov% 8, CRAP 8) — only Risk 10 is added
+
 ```
 
 ## Prompt 13A — Fix crap4js --format html
 
 ```
+
 The markdown and plain text outputs are functioning correctly. However,
 when executing `npx crap4js --format html > crap-report.html`, the
 resulting file has two problems:
 
-1. No valid HTML document structure — the output is a bare <div> fragment
-   missing <!DOCTYPE html>, <html>, <head>, <title>, and <body> wrappers.
+1. No valid HTML document structure — the output is a bare `<div>` fragment
+   missing `<!DOCTYPE html>`, `<html>`, `<head>`, `<title>`, and `<body>` wrappers.
    Browsers can render it, but it is not a conformant HTML page.
-
 2. When piped to a file, Vitest's console output (ANSI escape codes,
    coverage table) appears above the HTML because `console.log()` in
    core.mjs writes everything to stdout.
 
 Fix: Wrap the HTML formatter output in a full HTML5 document:
 
-  <!DOCTYPE html>
-  <html lang="en">
+<!DOCTYPE html>
+
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <title>CRAP Report</title>
@@ -725,27 +734,31 @@ Fix: Wrap the HTML formatter output in a full HTML5 document:
   </body>
   </html>
 
-Move the <style> block into <head>. Drop the outer <div class="crap-report">
-wrapper (the <body> serves that role). Keep all existing CSS classes and
+Move the `<style>` block into `<head>`. Drop the outer `<div class="crap-report">`
+wrapper (the `<body>` serves that role). Keep all existing CSS classes and
 escaping.
 
 Update tests:
-- HTML output starts with <!DOCTYPE html>
-- Contains <html, <head>, <body>, </html>
+
+- HTML output starts with `<!DOCTYPE html>`
+- Contains <html, `<head>`, `<body>`, `</html>`
 - <style> block is inside <head>
 - Risk CSS classes still present
 - HTML entity escaping still works
 - Existing text and markdown tests unchanged
 
 Verify:
+
 - `npx crap4js --format html > crap-report.html` produces a valid HTML page
 - `npm test` — all tests pass, no regression
 - `npm run crap` — text output unchanged
+
 ```
 
 ## Prompt 14 — Security Review
 
 ```
+
 Security review of crap4js. Do not implement changes — document findings
 and separate recommendations into two tiers:
 
@@ -771,23 +784,27 @@ outputs risk reports (text, markdown, HTML) for CI and developer use.
 ## 3. Findings
 
 ### Finding 1 — execSync command injection risk
+
   src/core.mjs uses execSync(coverageCmd, ...) where coverageCmd
   comes from package.json "crap.coverageCommand" or --coverage-cmd.
   If a malicious package.json is present, arbitrary commands execute.
   Risk: Medium (requires write access to package.json or CLI args).
 
 ### Finding 2 — Directory traversal in coverageDir / sourceGlob
+
   coverageDir and sourceGlob are read from package.json and CLI.
   No validation prevents paths like "../../etc" or absolute paths
   outside the project.
   Risk: Low (tool runs locally with user permissions anyway).
 
 ### Finding 3 — Dependency supply chain
+
   @babel/parser, @babel/traverse, globby, commander are direct deps.
   No lockfile integrity check or automated vulnerability scanning.
   Risk: Medium (common npm supply-chain concern).
 
 ### Finding 4 — HTML output injection surface
+
   escapeHtml() covers &, <, >, " but not single quotes (').
   Risk: Low (output is static file, not served by a web app).
 
@@ -857,11 +874,13 @@ external tooling. The external fixes (B) require GitHub settings,
 CI configuration, or third-party service setup.
 
 No code is modified by this prompt — it is a review document only.
+
 ```
 
 ## Prompt 15 — Release & npm Publish Plan
 
 ```
+
 Document a complete release and npm publishing plan for crap4js.
 Combine the publish checklist from Prompt 99 with the following guidance:
 
@@ -908,11 +927,13 @@ Combine the publish checklist from Prompt 99 with the following guidance:
 - Prompt 15 is documentation only.
 - It replaces Prompt 99 in the prompt bank.
 - It captures npm publishing, semantic versioning, dist-tags, validation, and release process best practices.
+
 ```
 
 ## Prompt 16 — CRAP Setup Diagnosis
 
 ```
+
 Identify why crap4js did not produce a report after installation and document the required workspace configuration.
 
 ## 1. Problem
@@ -966,11 +987,13 @@ Identify why crap4js did not produce a report after installation and document th
 - If the coverage command fails, an empty report is expected; fix the workspace tests/coverage runner first.
 - Check that `coverage/lcov.info` exists and is readable before rerunning `npx crap4js`.
 - For monorepos, set per-workspace config and pass `--coverage-dir` when needed.
+
 ```
 
 ## Prompt 17 — Legal / License Tidy-Up
 
 ```
+
 Review the repository for any references to the MIT license and replace them with Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
 
 ## 1. License metadata
@@ -991,8 +1014,76 @@ Review the repository for any references to the MIT license and replace them wit
 
 ## 4. Summary
 
-- This prompt is a legal tidy-up and license alignment task.
-- Replace remaining MIT references with CC BY-NC 4.0.
-- Ensure the packaged artifact carries the corrected license metadata.
-```
+* This prompt is a legal tidy-up and license alignment task.
+* Replace remaining MIT references with CC BY-NC 4.0.
+* Ensure the packaged artifact carries the corrected license metadata.
 
+## Prompt 18 Improve the Crap Report outputting
+
+Task: Enhance the crap4js tool to generate a dedicated "report-only" block or a separate output file, improving the robustness of CRAPReport.md updates and eliminating fragile console parsing.
+
+Objective:
+
+1. Update crap4js: Modify crap4js to emit a dedicated "report-only" block or a separate output file containing the CRAP report.
+2. Improve report extraction: Implement a simpler boundary rule to extract the CRAP report block reliably.
+3. Enhance robustness: Make CRAPReport.md updates more robust by reducing dependence on console output parsing.
+
+Requirements:
+
+1. Boundary rule: Use a simple boundary rule, such as:
+   * Start: line === 'CRAP Report'
+   * End: first line after start matching '% Coverage report from'
+2. Report extraction: Update `extractCrapReportBlock()` to reliably return the full report from the dedicated output file or block.
+3. Compatibility: Ensure that `npm run crap` alone can generate the report and copy it to CRAPReport.md.
+
+Expected** **outcome:
+
+1. Robust report updates: CRAPReport.md updates are no longer fragile and dependent on console output parsing.
+2. Simplified report extraction: The extractor can simply read a file instead of tailing terminal output.
+3. Improved maintainability: The updated crap4js tool is more maintainable and less prone to errors.
+
+Implementation** **strategy:
+
+1. Investigate current implementation: Review the current implementation of crap4js and the report extraction script.
+2. Design and test updates: Design and test the updates to crap4js and the report extraction script.
+3. Verify robustness: Verify that the updated implementation is more robust and reliable.
+
+Deliverables:
+
+1. Updated crap4js tool: A modified version of crap4js that emits a dedicated "report-only" block or a separate output file.
+2. Updated report extraction script: An updated report extraction script that uses the simpler boundary rule and extracts the report reliably.
+3. Test results: Test results verifying the robustness and reliability of the updated implementation.
+
+Task: Enhance the crap4js tool to generate a dedicated "report-only" block or a separate output file, improving the robustness of CRAPReport.md updates and eliminating fragile console parsing.
+
+Objective:
+
+1. Update crap4js: Modify crap4js to emit a dedicated "report-only" block or a separate output file containing the CRAP report.
+2. Improve report extraction: Implement a simpler boundary rule to extract the CRAP report block reliably.
+3. Enhance robustness: Make CRAPReport.md updates more robust by reducing dependence on console output parsing.
+
+Requirements:
+
+1. Boundary rule: Use a simple boundary rule, such as:
+   * Start: line === 'CRAP Report'
+   * End: first line after start matching '% Coverage report from'
+2. Report extraction: Update `extractCrapReportBlock()` to reliably return the full report from the dedicated output file or block.
+3. Compatibility: Ensure that `npm run crap` alone can generate the report and copy it to CRAPReport.md.
+
+Expected** **outcome:
+
+1. Robust report updates: CRAPReport.md updates are no longer fragile and dependent on console output parsing.
+2. Simplified report extraction: The extractor can simply read a file instead of tailing terminal output.
+3. Improved maintainability: The updated crap4js tool is more maintainable and less prone to errors.
+
+Implementation** **strategy:
+
+1. Investigate current implementation: Review the current implementation of crap4js and the report extraction script.
+2. Design and test updates: Design and test the updates to crap4js and the report extraction script.
+3. Verify robustness: Verify that the updated implementation is more robust and reliable.
+
+Deliverables:
+
+1. Updated crap4js tool: A modified version of crap4js that emits a dedicated "report-only" block or a separate output file.
+2. Updated report extraction script: An updated report extraction script that uses the simpler boundary rule and extracts the report reliably.
+3. Test results: Test results verifying the robustness and reliability of the updated implementation.
