@@ -1,6 +1,6 @@
 {
   "name": "crap4js",
-  "version": "1.0.1-beta.2",
+  "version": "1.0.1-beta.3",
   "description": "CRAP metric for JavaScript/TypeScript — identifies complex, under-tested code",
   "type": "module",
   "bin": {
