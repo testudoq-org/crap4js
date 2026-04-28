@@ -2,7 +2,6 @@ CRAP Report
 ===========
 Function                       File                                   CC     Cov%     CRAP  Risk      
 ------------------------------------------------------------------------------------------------------
-resolveAssignmentTargetName    src/complexity.mjs                      3     0.0%     12.0  moderate  
 resolveKeyName                 src/complexity.mjs                      3    40.0%      4.9  low       
 maybeDeleteCoverageDir         src/core.mjs                            3    50.0%      4.1  low       
 classNameFromParent            src/complexity.mjs                      4   100.0%      4.0  low       
@@ -17,11 +16,12 @@ handleDataLine                 src/coverage.mjs                        4   100.0
 riskLevel                      src/crap.mjs                            4   100.0%      4.0  low       
 riskCounts                     src/crap.mjs                            4   100.0%      4.0  low       
 cli                            src/core.mjs                            2    25.0%      3.7  low       
-assignmentExpressionName       src/complexity.mjs                      3    60.0%      3.6  low       
+resolveAssignmentTargetName    src/complexity.mjs                      3    60.0%      3.6  low       
 analyzeFile                    src/core.mjs                            3    76.9%      3.1  low       
 loadPackageJson                src/core.mjs                            3    80.0%      3.1  low       
 writeReportFile                src/core.mjs                            3    83.3%      3.0  low       
 objectMethodName               src/complexity.mjs                      3   100.0%      3.0  low       
+assignmentExpressionName       src/complexity.mjs                      3   100.0%      3.0  low       
 resolveName                    src/complexity.mjs                      3   100.0%      3.0  low       
 nodeComplexity                 src/complexity.mjs                      3   100.0%      3.0  low       
 enter                          src/complexity.mjs                      3   100.0%      3.0  low       
@@ -104,4 +104,4 @@ pad                            src/crap.mjs                            1   100.0
 rpad                           src/crap.mjs                            1   100.0%      1.0  low       
 escapeHtml                     src/crap.mjs                            1   100.0%      1.0  low       
 
-0 functions at high risk, 1 at moderate.
+0 functions at high risk, 0 at moderate.
