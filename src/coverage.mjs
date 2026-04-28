@@ -73,10 +73,8 @@ function parseLcov(lcovContent, sourceFiles) {
   let distPathCount = 0;
   let totalFileCount = 0;
 
-  for (const rawLine of lcovContent.split('\n')) {
-    const line = rawLine.trim();
-
-    if (line.startsWith('SF:')) {
+  const handlers = {
+    SF: (line) => {
       const raw = line.slice(3);
       const normalised = normalisePath(raw);
       totalFileCount++;
@@ -86,7 +84,6 @@ function parseLcov(lcovContent, sourceFiles) {
       }
 
       const matchedPath = resolveLcovSource(raw, sourceFiles);
-
       if (CRAP4JS_DEBUG_LCOV) {
         const matched = sourceFiles && sourceFiles.has(matchedPath) ? matchedPath : 'NO MATCH';
         console.error(`[LCOV] raw: ${raw} → normalised: ${normalised} → matched: ${matched}`);
@@ -95,15 +92,27 @@ function parseLcov(lcovContent, sourceFiles) {
       currentFile = matchedPath;
       currentMap = coverage.get(currentFile) || new Map();
       coverage.set(currentFile, currentMap);
-    } else if (line.startsWith('DA:')) {
-      if (!currentMap) continue;
+    },
+    DA: (line) => {
+      if (!currentMap) return;
       const parts = line.slice(3).split(',');
       const lineNo = parseInt(parts[0], 10);
       const hitCount = parseInt(parts[1], 10);
-      if (!isNaN(lineNo) && !isNaN(hitCount)) {
+      if (!Number.isNaN(lineNo) && !Number.isNaN(hitCount)) {
         currentMap.set(lineNo, hitCount > 0);
       }
-    } else if (line === 'end_of_record') {
+    },
+  };
+
+  for (const rawLine of lcovContent.split('\n')) {
+    const line = rawLine.trim();
+    const prefix = line.slice(0, 2);
+    const handler = handlers[prefix];
+    if (handler) {
+      handler(line);
+      continue;
+    }
+    if (line === 'end_of_record') {
       currentFile = null;
       currentMap = null;
     }

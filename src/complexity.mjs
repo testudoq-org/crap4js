@@ -47,15 +47,9 @@ function classMethodName(path) {
   const methodName = node.type === 'ClassPrivateMethod'
     ? `#${node.key.id.name}`
     : (node.key.name || node.key.value || String(node.key));
-  let current = path.parentPath;
-  while (current) {
-    if (current.node.type === 'ClassDeclaration' || current.node.type === 'ClassExpression') {
-      const className = current.node.id ? current.node.id.name : '<anonymous>';
-      return `${className}.${methodName}`;
-    }
-    current = current.parentPath;
-  }
-  return methodName;
+  const parentClass = path.findParent(p => p.isClassDeclaration() || p.isClassExpression());
+  const className = parentClass?.node?.id?.name || '<anonymous>';
+  return `${className}.${methodName}`;
 }
 
 function objectMethodName(path) {
@@ -72,41 +66,29 @@ function variableDeclaratorName(path) {
 
 function assignmentExpressionName(path) {
   const parent = path.parent;
-  if (parent && parent.type === 'AssignmentExpression' && parent.left) {
-    return parent.left.name || null;
-  }
-  return null;
+  return parent && parent.type === 'AssignmentExpression' && parent.left
+    ? parent.left.name || null
+    : null;
 }
 
 function functionExpressionName(node) {
   return node.id ? node.id.name : null;
 }
 
+const NAME_RESOLVERS = {
+  FunctionDeclaration: (path) => path.node.id?.name ?? null,
+  ClassMethod: classMethodName,
+  ClassPrivateMethod: classMethodName,
+  ObjectMethod: objectMethodName,
+  FunctionExpression: (path) => functionExpressionName(path.node) || variableDeclaratorName(path),
+  ArrowFunctionExpression: (path) => variableDeclaratorName(path) || assignmentExpressionName(path),
+};
+
 function resolveName(path) {
   const node = path.node;
-
-  if (node.type === 'FunctionDeclaration' && node.id) {
-    return node.id.name;
-  }
-
-  if (node.type === 'ClassMethod' || node.type === 'ClassPrivateMethod') {
-    return classMethodName(path);
-  }
-
-  if (node.type === 'ObjectMethod') {
-    return objectMethodName(path);
-  }
-
-  const declaratorName = variableDeclaratorName(path);
-  if (declaratorName) return declaratorName;
-
-  const assignmentName = assignmentExpressionName(path);
-  if (assignmentName) return assignmentName;
-
-  const expressionName = functionExpressionName(node);
-  if (expressionName) return expressionName;
-
-  return `<anonymous:${node.loc ? node.loc.start.line : '?'}>`;
+  const resolver = NAME_RESOLVERS[node.type];
+  const resolved = resolver?.(path);
+  return resolved || `<anonymous:${node.loc?.start.line ?? '?'}>`;
 }
 
 /**
@@ -114,12 +96,18 @@ function resolveName(path) {
  * @param {import('@babel/traverse').NodePath} functionPath
  * @returns {number}
  */
+const LOGICAL_OPERATORS = new Set(['&&', '||', '??']);
+const ASSIGNMENT_OPERATORS = new Set(['||=', '&&=', '??=']);
+
+const COMPLEXITY_HANDLERS = {
+  SwitchCase: (node) => node.test !== null ? 1 : 0,
+  LogicalExpression: (node) => LOGICAL_OPERATORS.has(node.operator) ? 1 : 0,
+  AssignmentExpression: (node) => ASSIGNMENT_OPERATORS.has(node.operator) ? 1 : 0,
+};
+
 function nodeComplexity(node) {
   if (CC_NODE_TYPES.has(node.type)) return 1;
-  if (node.type === 'SwitchCase' && node.test !== null) return 1;
-  if (node.type === 'LogicalExpression' && ['&&', '||', '??'].includes(node.operator)) return 1;
-  if (node.type === 'AssignmentExpression' && ['||=', '&&=', '??='].includes(node.operator)) return 1;
-  return 0;
+  return COMPLEXITY_HANDLERS[node.type]?.(node) || 0;
 }
 
 function countCC(functionPath) {

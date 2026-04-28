@@ -199,51 +199,63 @@ function coverageFraction(fileLines, startLine, endLine) {
  * @param {boolean} [options.runCoverage]
  * @returns {{ output: string, exitCode: number }}
  */
-export function run(options = {}) {
-  const config = readConfig();
-  const coverageDir = options.coverageDir || config.coverageDir;
-  const coverageCmd = options.coverageCmd || config.coverageCommand;
-  const filters = options.filters || [];
-  const shouldDelete = options.delete !== false;
-  const shouldRunCoverage = options.runCoverage !== false;
-  const format = options.format || 'text';
+function normalizeRunOptions(options, config) {
+  return {
+    coverageDir: options.coverageDir || config.coverageDir,
+    coverageCmd: options.coverageCmd || config.coverageCommand,
+    filters: options.filters || [],
+    sourceGlob: options.sourceGlob || config.sourceGlob,
+    format: options.format || 'text',
+    reportFile: options.reportFile,
+    shouldDelete: options.delete !== false,
+    shouldRunCoverage: options.runCoverage !== false,
+  };
+}
 
-  validateCoverageDir(coverageDir);
-  if (shouldRunCoverage) {
-    validateCoverageCmd(coverageCmd);
-  }
+function maybeRunCoverage(shouldRunCoverage, coverageCmd, format) {
+  if (!shouldRunCoverage) return false;
+  validateCoverageCmd(coverageCmd);
+  return executeCoverageCommand(coverageCmd, format);
+}
 
-  if (shouldDelete && existsSync(coverageDir)) {
+function maybeDeleteCoverageDir(coverageDir, shouldDelete) {
+  if (!shouldDelete) return;
+  if (existsSync(coverageDir)) {
     rmSync(coverageDir, { recursive: true, force: true });
   }
+}
 
-  const coverageCommandFailed = shouldRunCoverage
-    ? executeCoverageCommand(coverageCmd, format)
-    : false;
+function finalizeRunOutput(entries, coverageCommandFailed, coverageLoaded, reportFile, format) {
+  let output = formatReport(entries, format);
+  const hasHighRisk = entries.some(e => e.crap != null && e.crap > 30);
+  const shouldError = coverageCommandFailed && !coverageLoaded;
 
-  const sourceGlob = options.sourceGlob || config.sourceGlob;
-  const sourceFiles = loadSourceFiles(sourceGlob);
-  const coverageData = loadCoverageData(coverageDir, sourceFiles);
+  if (shouldError) {
+    output = '[crap4js] ERROR: Coverage command failed and no coverage data was loaded. Fix the workspace tests/coverage pipeline and rerun.\n\n' + output;
+  }
+
+  writeReportFile(output, reportFile);
+  return { output, exitCode: shouldError ? 1 : (hasHighRisk ? 1 : 0) };
+}
+
+export function run(options = {}) {
+  const config = readConfig();
+  const opts = normalizeRunOptions(options, config);
+
+  validateCoverageDir(opts.coverageDir);
+  maybeDeleteCoverageDir(opts.coverageDir, opts.shouldDelete);
+  const coverageCommandFailed = maybeRunCoverage(opts.shouldRunCoverage, opts.coverageCmd, opts.format);
+
+  const sourceFiles = loadSourceFiles(opts.sourceGlob);
+  const coverageData = loadCoverageData(opts.coverageDir, sourceFiles);
   const coverageLoaded = coverageData.size > 0;
 
   if (coverageCommandFailed && !coverageLoaded) {
     console.error('[crap4js] Error: Coverage command failed and no coverage data was loaded. Fix the workspace tests/coverage pipeline and rerun.');
   }
 
-  const filesToAnalyse = filterSourceFiles(sourceFiles, filters);
-  const entries = analyzeSourceFiles(filesToAnalyse, coverageData);
-
-  let output = formatReport(entries, format);
-  const hasHighRisk = entries.some(e => e.crap != null && e.crap > 30);
-
-  if (coverageCommandFailed && !coverageLoaded) {
-    output = '[crap4js] ERROR: Coverage command failed and no coverage data was loaded. Fix the workspace tests/coverage pipeline and rerun.\n\n' + output;
-    writeReportFile(output, options.reportFile);
-    return { output, exitCode: 1 };
-  }
-
-  writeReportFile(output, options.reportFile);
-  return { output, exitCode: hasHighRisk ? 1 : 0 };
+  const entries = analyzeSourceFiles(filterSourceFiles(sourceFiles, opts.filters), coverageData);
+  return finalizeRunOutput(entries, coverageCommandFailed, coverageLoaded, opts.reportFile, opts.format);
 }
 
 // CLI setup — only runs when imported by cli.mjs or invoked directly
