@@ -43,6 +43,23 @@ function suffixMatch(lcovPath, knownPaths) {
   return null;
 }
 
+function isCompiledOutputPath(path) {
+  return /(?:^|[/\\])(dist|build)(?:[/\\]|$)/i.test(path);
+}
+
+function resolveLcovSource(raw, sourceFiles) {
+  const normalised = normalisePath(raw);
+  if (!sourceFiles || sourceFiles.has(normalised)) {
+    return normalised;
+  }
+
+  const suffixed = suffixMatch(normalised, sourceFiles);
+  if (suffixed) return suffixed;
+
+  console.error(`[crap4js] Warning: no source file matches LCOV path: ${raw}`);
+  return normalised;
+}
+
 /**
  * Parse LCOV content into a coverage map.
  * @param {string} lcovContent
@@ -61,28 +78,14 @@ function parseLcov(lcovContent, sourceFiles) {
 
     if (line.startsWith('SF:')) {
       const raw = line.slice(3);
-      let normalised = normalisePath(raw);
+      const normalised = normalisePath(raw);
       totalFileCount++;
 
-      // Check for dist/build path pattern (anywhere in the path)
-      if (/(?:^|[/\\])(dist|build)(?:[/\\]|$)/i.test(normalised) ||
-          /(?:^|[/\\])(dist|build)(?:[/\\]|$)/i.test(raw)) {
+      if (isCompiledOutputPath(normalised) || isCompiledOutputPath(raw)) {
         distPathCount++;
       }
 
-      let matchedPath = normalised;
-
-      // Try direct match first, then suffix match
-      if (sourceFiles && !sourceFiles.has(normalised)) {
-        const suffixed = suffixMatch(normalised, sourceFiles);
-        if (suffixed) {
-          matchedPath = suffixed;
-        } else {
-          // No match — warn
-          console.error(`[crap4js] Warning: no source file matches LCOV path: ${raw}`);
-          matchedPath = normalised; // keep it anyway
-        }
-      }
+      const matchedPath = resolveLcovSource(raw, sourceFiles);
 
       if (CRAP4JS_DEBUG_LCOV) {
         const matched = sourceFiles && sourceFiles.has(matchedPath) ? matchedPath : 'NO MATCH';
@@ -106,7 +109,6 @@ function parseLcov(lcovContent, sourceFiles) {
     }
   }
 
-  // Source map warning
   if (totalFileCount > 0 && distPathCount === totalFileCount) {
     console.error(
       '[crap4js] Warning: LCOV paths point to compiled output, not source. ' +

@@ -5,6 +5,12 @@ export default defineConfig({
     coverage: {
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
+      exclude: [
+        'stryker.conf.mjs',
+        'eslint.config.mjs',
+        'vitest.config.mjs',
+        '.codacy/**',
+      ],
     },
   },
 });

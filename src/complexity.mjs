@@ -42,52 +42,70 @@ const CC_NODE_TYPES = new Set([
  * @param {import('@babel/traverse').NodePath} path
  * @returns {string}
  */
+function classMethodName(path) {
+  const node = path.node;
+  const methodName = node.type === 'ClassPrivateMethod'
+    ? `#${node.key.id.name}`
+    : (node.key.name || node.key.value || String(node.key));
+  let current = path.parentPath;
+  while (current) {
+    if (current.node.type === 'ClassDeclaration' || current.node.type === 'ClassExpression') {
+      const className = current.node.id ? current.node.id.name : '<anonymous>';
+      return `${className}.${methodName}`;
+    }
+    current = current.parentPath;
+  }
+  return methodName;
+}
+
+function objectMethodName(path) {
+  const key = path.node.key;
+  return key.name || key.value || String(key);
+}
+
+function variableDeclaratorName(path) {
+  const parent = path.parent;
+  return parent && parent.type === 'VariableDeclarator' && parent.id
+    ? parent.id.name
+    : null;
+}
+
+function assignmentExpressionName(path) {
+  const parent = path.parent;
+  if (parent && parent.type === 'AssignmentExpression' && parent.left) {
+    return parent.left.name || null;
+  }
+  return null;
+}
+
+function functionExpressionName(node) {
+  return node.id ? node.id.name : null;
+}
+
 function resolveName(path) {
   const node = path.node;
 
-  // FunctionDeclaration with id
   if (node.type === 'FunctionDeclaration' && node.id) {
     return node.id.name;
   }
 
-  // ClassMethod / ClassPrivateMethod → ClassName.methodName
   if (node.type === 'ClassMethod' || node.type === 'ClassPrivateMethod') {
-    const methodName = node.type === 'ClassPrivateMethod'
-      ? `#${node.key.id.name}`
-      : (node.key.name || node.key.value || String(node.key));
-    // Walk up to ClassDeclaration/ClassExpression
-    let current = path.parentPath;
-    while (current) {
-      if (current.node.type === 'ClassDeclaration' || current.node.type === 'ClassExpression') {
-        const className = current.node.id ? current.node.id.name : '<anonymous>';
-        return `${className}.${methodName}`;
-      }
-      current = current.parentPath;
-    }
-    return methodName;
+    return classMethodName(path);
   }
 
-  // ObjectMethod → property key name
   if (node.type === 'ObjectMethod') {
-    return node.key.name || node.key.value || String(node.key);
+    return objectMethodName(path);
   }
 
-  // Arrow or FunctionExpression in VariableDeclarator
-  if (path.parent && path.parent.type === 'VariableDeclarator' && path.parent.id) {
-    return path.parent.id.name;
-  }
+  const declaratorName = variableDeclaratorName(path);
+  if (declaratorName) return declaratorName;
 
-  // Arrow or FunctionExpression in assignment: foo = function() {}
-  if (path.parent && path.parent.type === 'AssignmentExpression' && path.parent.left) {
-    if (path.parent.left.name) return path.parent.left.name;
-  }
+  const assignmentName = assignmentExpressionName(path);
+  if (assignmentName) return assignmentName;
 
-  // FunctionExpression with id (named expression)
-  if (node.type === 'FunctionExpression' && node.id) {
-    return node.id.name;
-  }
+  const expressionName = functionExpressionName(node);
+  if (expressionName) return expressionName;
 
-  // Fallback: anonymous with line number
   return `<anonymous:${node.loc ? node.loc.start.line : '?'}>`;
 }
 
@@ -96,6 +114,14 @@ function resolveName(path) {
  * @param {import('@babel/traverse').NodePath} functionPath
  * @returns {number}
  */
+function nodeComplexity(node) {
+  if (CC_NODE_TYPES.has(node.type)) return 1;
+  if (node.type === 'SwitchCase' && node.test !== null) return 1;
+  if (node.type === 'LogicalExpression' && ['&&', '||', '??'].includes(node.operator)) return 1;
+  if (node.type === 'AssignmentExpression' && ['||=', '&&=', '??='].includes(node.operator)) return 1;
+  return 0;
+}
+
 function countCC(functionPath) {
   let cc = 1; // base complexity
 
@@ -103,38 +129,12 @@ function countCC(functionPath) {
     enter(innerPath) {
       const node = innerPath.node;
 
-      // Stop at nested function boundaries
       if (FUNCTION_TYPES.has(node.type) && innerPath !== functionPath) {
         innerPath.skip();
         return;
       }
 
-      // Standard CC nodes
-      if (CC_NODE_TYPES.has(node.type)) {
-        // For SwitchCase, only count non-default cases
-        cc++;
-        return;
-      }
-
-      // SwitchCase: +1 per case with test (not default)
-      if (node.type === 'SwitchCase' && node.test !== null) {
-        cc++;
-        return;
-      }
-
-      // LogicalExpression: &&, ||, ??
-      if (node.type === 'LogicalExpression' &&
-          (node.operator === '&&' || node.operator === '||' || node.operator === '??')) {
-        cc++;
-        return;
-      }
-
-      // Logical assignment operators: ||=, &&=, ??=
-      if (node.type === 'AssignmentExpression' &&
-          (node.operator === '||=' || node.operator === '&&=' || node.operator === '??=')) {
-        cc++;
-        return;
-      }
+      cc += nodeComplexity(node);
     },
   });
 

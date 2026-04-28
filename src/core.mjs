@@ -83,6 +83,86 @@ function readConfig() {
   }
 }
 
+function executeCoverageCommand(coverageCmd, format) {
+  const covStdio = format === 'text'
+    ? 'inherit'
+    : ['inherit', process.stderr, 'inherit'];
+  try {
+    execSync(coverageCmd, { stdio: covStdio });
+    return false;
+  } catch (err) {
+    console.error('[crap4js] Warning: coverage command exited with non-zero status. Continuing with partial coverage.');
+    if (err && err.status != null) {
+      console.error(`[crap4js] Warning: coverage command exited with status ${err.status}.`);
+    }
+    return true;
+  }
+}
+
+function loadSourceFiles(sourceGlob) {
+  return globbySync(sourceGlob).map(f => f.replace(/\\/g, '/'));
+}
+
+function filterSourceFiles(sourceFiles, filters) {
+  if (!filters.length) return sourceFiles;
+  return sourceFiles.filter(f => filters.some(frag => f.includes(frag)));
+}
+
+function writeReportFile(output, reportFile) {
+  if (!reportFile) return;
+
+  const reportPath = resolve(reportFile);
+  const reportDir = dirname(reportPath);
+  try {
+    mkdirSync(reportDir, { recursive: true });
+    writeFileSync(reportPath, output, 'utf8');
+  } catch (err) {
+    console.error(`[crap4js] Warning: could not write report file ${reportPath}: ${err.message}`);
+  }
+}
+
+function loadCoverageData(coverageDir, sourceFiles) {
+  const sourceFileSet = new Set(sourceFiles);
+  return loadCoverage(coverageDir, sourceFileSet);
+}
+
+function analyzeSourceFiles(filesToAnalyse, coverageData) {
+  const entries = [];
+
+  for (const filePath of filesToAnalyse) {
+    let source;
+    try {
+      source = readFileSync(filePath, 'utf8');
+    } catch (err) {
+      console.error(`[crap4js] Warning: could not read ${filePath}: ${err.message}`);
+      continue;
+    }
+
+    let functions;
+    try {
+      functions = extractFunctions(source, filePath);
+    } catch (err) {
+      console.error(`[crap4js] Warning: parse error in ${filePath}: ${err.message}`);
+      continue;
+    }
+
+    const fileLines = coverageData.get(filePath);
+    for (const fn of functions) {
+      const cov = coverageFraction(fileLines, fn.startLine, fn.endLine);
+      const crap = crapScore(fn.cc, cov);
+      entries.push({
+        name: fn.name,
+        file: fn.file,
+        cc: fn.cc,
+        coverage: cov,
+        crap,
+      });
+    }
+  }
+
+  return entries;
+}
+
 /**
  * Compute coverage fraction for a function within [startLine..endLine].
  * @param {Map<number, boolean>|undefined} fileLines
@@ -126,127 +206,43 @@ export function run(options = {}) {
   const filters = options.filters || [];
   const shouldDelete = options.delete !== false;
   const shouldRunCoverage = options.runCoverage !== false;
+  const format = options.format || 'text';
 
-  // Validate inputs before any side effects
   validateCoverageDir(coverageDir);
   if (shouldRunCoverage) {
     validateCoverageCmd(coverageCmd);
   }
 
-  // Step 2: Delete coverage dir unless --no-delete
   if (shouldDelete && existsSync(coverageDir)) {
     rmSync(coverageDir, { recursive: true, force: true });
   }
 
-  // Step 3: Run coverage command
-  // When format != text, redirect coverage output to stderr so only
-  // the report goes to stdout (important for piping html/markdown to a file).
-  const format = options.format || 'text';
-  let coverageCommandFailed = false;
-  if (shouldRunCoverage) {
-    const covStdio = format === 'text'
-      ? 'inherit'
-      : ['inherit', process.stderr, 'inherit'];
-    try {
-      execSync(coverageCmd, { stdio: covStdio });
-    } catch (err) {
-      coverageCommandFailed = true;
-      console.error('[crap4js] Warning: coverage command exited with non-zero status. Continuing with partial coverage.');
-      if (err && err.status != null) {
-        console.error(`[crap4js] Warning: coverage command exited with status ${err.status}.`);
-      }
-    }
-  }
+  const coverageCommandFailed = shouldRunCoverage
+    ? executeCoverageCommand(coverageCmd, format)
+    : false;
 
-  // Step 4: Load coverage data
   const sourceGlob = options.sourceGlob || config.sourceGlob;
-  let sourceFiles = globbySync(sourceGlob);
-
-  // Normalise paths
-  sourceFiles = sourceFiles.map(f => f.replace(/\\/g, '/'));
-
-  const sourceFileSet = new Set(sourceFiles);
-  const coverageData = loadCoverage(coverageDir, sourceFileSet);
+  const sourceFiles = loadSourceFiles(sourceGlob);
+  const coverageData = loadCoverageData(coverageDir, sourceFiles);
   const coverageLoaded = coverageData.size > 0;
 
   if (coverageCommandFailed && !coverageLoaded) {
     console.error('[crap4js] Error: Coverage command failed and no coverage data was loaded. Fix the workspace tests/coverage pipeline and rerun.');
   }
 
-  // Step 5: Filter source files
-  let filesToAnalyse = sourceFiles;
-  if (filters.length > 0) {
-    filesToAnalyse = sourceFiles.filter(f =>
-      filters.some(frag => f.includes(frag))
-    );
-  }
+  const filesToAnalyse = filterSourceFiles(sourceFiles, filters);
+  const entries = analyzeSourceFiles(filesToAnalyse, coverageData);
 
-  // Step 6: Analyse each file
-  const entries = [];
-  for (const filePath of filesToAnalyse) {
-    let source;
-    try {
-      source = readFileSync(filePath, 'utf8');
-    } catch (err) {
-      console.error(`[crap4js] Warning: could not read ${filePath}: ${err.message}`);
-      continue;
-    }
-
-    let functions;
-    try {
-      functions = extractFunctions(source, filePath);
-    } catch (err) {
-      console.error(`[crap4js] Warning: parse error in ${filePath}: ${err.message}`);
-      continue;
-    }
-
-    const fileLines = coverageData.get(filePath);
-
-    for (const fn of functions) {
-      const cov = coverageFraction(fileLines, fn.startLine, fn.endLine);
-      const crap = crapScore(fn.cc, cov);
-      entries.push({
-        name: fn.name,
-        file: fn.file,
-        cc: fn.cc,
-        coverage: cov,
-        crap,
-      });
-    }
-  }
-
-  // Step 7: Format and output
   let output = formatReport(entries, format);
-
-  // Step 8: Exit code
   const hasHighRisk = entries.some(e => e.crap != null && e.crap > 30);
 
   if (coverageCommandFailed && !coverageLoaded) {
     output = '[crap4js] ERROR: Coverage command failed and no coverage data was loaded. Fix the workspace tests/coverage pipeline and rerun.\n\n' + output;
-    if (options.reportFile) {
-      const reportPath = resolve(options.reportFile);
-      const reportDir = dirname(reportPath);
-      try {
-        mkdirSync(reportDir, { recursive: true });
-        writeFileSync(reportPath, output, 'utf8');
-      } catch (err) {
-        console.error(`[crap4js] Warning: could not write report file ${reportPath}: ${err.message}`);
-      }
-    }
+    writeReportFile(output, options.reportFile);
     return { output, exitCode: 1 };
   }
 
-  if (options.reportFile) {
-    const reportPath = resolve(options.reportFile);
-    const reportDir = dirname(reportPath);
-    try {
-      mkdirSync(reportDir, { recursive: true });
-      writeFileSync(reportPath, output, 'utf8');
-    } catch (err) {
-      console.error(`[crap4js] Warning: could not write report file ${reportPath}: ${err.message}`);
-    }
-  }
-
+  writeReportFile(output, options.reportFile);
   return { output, exitCode: hasHighRisk ? 1 : 0 };
 }
 
