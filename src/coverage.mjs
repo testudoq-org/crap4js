@@ -2,6 +2,7 @@
  * coverage.mjs — LCOV parser + HTML fallback
  * Returns a Map<filePath, Map<lineNumber, covered>>
  */
+/* global console */
 
 import { readFileSync, existsSync } from 'fs';
 import { resolve, relative, join } from 'path';
@@ -60,6 +61,14 @@ function resolveLcovSource(raw, sourceFiles) {
   return normalised;
 }
 
+function logLcovDebug(raw, normalised, resolved, sourceFiles) {
+  if (!CRAP4JS_DEBUG_LCOV) return;
+  console.error(
+    `[LCOV] raw: ${raw}; normalised: ${normalised}; resolved: ${resolved}; ` +
+      `sourceFiles: ${sourceFiles ? Array.from(sourceFiles).join(',') : 'none'}`
+  );
+}
+
 /**
  * Parse LCOV content into a coverage map.
  * @param {string} lcovContent
@@ -68,57 +77,21 @@ function resolveLcovSource(raw, sourceFiles) {
  */
 function parseLcov(lcovContent, sourceFiles) {
   const coverage = new Map();
-  let currentFile = null;
-  let currentMap = null;
-  let distPathCount = 0;
-  let totalFileCount = 0;
-
-  const handlers = {
-    SF: (line) => {
-      const raw = line.slice(3);
-      const normalised = normalisePath(raw);
-      totalFileCount++;
-
-      if (isCompiledOutputPath(normalised) || isCompiledOutputPath(raw)) {
-        distPathCount++;
-      }
-
-      const matchedPath = resolveLcovSource(raw, sourceFiles);
-      if (CRAP4JS_DEBUG_LCOV) {
-        const matched = sourceFiles && sourceFiles.has(matchedPath) ? matchedPath : 'NO MATCH';
-        console.error(`[LCOV] raw: ${raw} → normalised: ${normalised} → matched: ${matched}`);
-      }
-
-      currentFile = matchedPath;
-      currentMap = coverage.get(currentFile) || new Map();
-      coverage.set(currentFile, currentMap);
-    },
-    DA: (line) => {
-      if (!currentMap) return;
-      const parts = line.slice(3).split(',');
-      const lineNo = parseInt(parts[0], 10);
-      const hitCount = parseInt(parts[1], 10);
-      if (!Number.isNaN(lineNo) && !Number.isNaN(hitCount)) {
-        currentMap.set(lineNo, hitCount > 0);
-      }
-    },
+  const state = {
+    currentFile: null,
+    currentMap: null,
+    distPathCount: 0,
+    totalFileCount: 0,
   };
 
-  for (const rawLine of lcovContent.split('\n')) {
-    const line = rawLine.trim();
-    const prefix = line.slice(0, 2);
-    const handler = handlers[prefix];
-    if (handler) {
-      handler(line);
-      continue;
-    }
-    if (line === 'end_of_record') {
-      currentFile = null;
-      currentMap = null;
-    }
-  }
+  const handlers = {
+    SF: (line) => handleSourceFile(line, state, coverage, sourceFiles),
+    DA: (line) => handleDataLine(line, state),
+  };
 
-  if (totalFileCount > 0 && distPathCount === totalFileCount) {
+  lcovContent.split('\n').forEach(rawLine => processLcovLine(rawLine.trim(), handlers, state));
+
+  if (state.totalFileCount > 0 && state.distPathCount === state.totalFileCount) {
     console.error(
       '[crap4js] Warning: LCOV paths point to compiled output, not source. ' +
       'Check that sourceMap: true is set in tsconfig.json.'
@@ -126,6 +99,39 @@ function parseLcov(lcovContent, sourceFiles) {
   }
 
   return coverage;
+}
+
+function processLcovLine(line, handlers, state) {
+  handlers[line.slice(0, 2)]?.(line);
+  if (line === 'end_of_record') {
+    state.currentFile = null;
+    state.currentMap = null;
+  }
+}
+
+function handleSourceFile(line, state, coverage, sourceFiles) {
+  const raw = line.slice(3);
+  const normalised = normalisePath(raw);
+  state.totalFileCount++;
+
+  if (isCompiledOutputPath(normalised) || isCompiledOutputPath(raw)) {
+    state.distPathCount++;
+  }
+
+  state.currentFile = resolveLcovSource(raw, sourceFiles);
+  logLcovDebug(raw, normalised, state.currentFile, sourceFiles);
+  state.currentMap = coverage.get(state.currentFile) || new Map();
+  coverage.set(state.currentFile, state.currentMap);
+}
+
+function handleDataLine(line, state) {
+  if (!state.currentMap) return;
+  const parts = line.slice(3).split(',');
+  const lineNo = parseInt(parts[0], 10);
+  const hitCount = parseInt(parts[1], 10);
+  if (!Number.isNaN(lineNo) && !Number.isNaN(hitCount)) {
+    state.currentMap.set(lineNo, hitCount > 0);
+  }
 }
 
 /**
@@ -137,33 +143,33 @@ function parseHtmlFallback(coverageDir) {
   const coverage = new Map();
   const htmlFiles = globbySync(join(coverageDir, '**/*.html').replace(/\\/g, '/'));
 
-  for (const htmlFile of htmlFiles) {
-    const content = readFileSync(htmlFile, 'utf8');
-    const lineMap = new Map();
-    // Simple regex to extract data-line and class from span elements
-    const spanRegex = /<span[^>]*class="(covered|not-covered)"[^>]*data-line="(\d+)"[^>]*>/g;
-    const spanRegex2 = /<span[^>]*data-line="(\d+)"[^>]*class="(covered|not-covered)"[^>]*>/g;
-    let match;
-
-    while ((match = spanRegex.exec(content)) !== null) {
-      const covered = match[1] === 'covered';
-      const lineNo = parseInt(match[2], 10);
-      lineMap.set(lineNo, covered);
-    }
-    while ((match = spanRegex2.exec(content)) !== null) {
-      const covered = match[2] === 'covered';
-      const lineNo = parseInt(match[1], 10);
-      lineMap.set(lineNo, covered);
-    }
-
-    if (lineMap.size > 0) {
-      // Derive file path from HTML file name
-      const relPath = relative(coverageDir, htmlFile).replace(/\.html$/, '').replace(/\\/g, '/');
-      coverage.set(relPath, lineMap);
-    }
-  }
-
+  htmlFiles.forEach(htmlFile => processHtmlFile(htmlFile, coverage, coverageDir));
   return coverage;
+}
+
+function processHtmlFile(htmlFile, coverage, coverageDir) {
+  const content = readFileSync(htmlFile, 'utf8');
+  const lineMap = extractHtmlCoverage(content);
+  if (lineMap.size === 0) return;
+
+  const relPath = relative(coverageDir, htmlFile).replace(/\.html$/, '').replace(/\\/g, '/');
+  coverage.set(relPath, lineMap);
+}
+
+function extractHtmlCoverage(content) {
+  const lineMap = new Map();
+  parseCoverageSpans(content, /<span[^>]*class="(covered|not-covered)"[^>]*data-line="(\d+)"[^>]*>/g, lineMap, 1, 2);
+  parseCoverageSpans(content, /<span[^>]*data-line="(\d+)"[^>]*class="(covered|not-covered)"[^>]*>/g, lineMap, 2, 1);
+  return lineMap;
+}
+
+function parseCoverageSpans(content, regex, lineMap, coveredIndex, lineIndex) {
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    const covered = match[coveredIndex] === 'covered';
+    const lineNo = parseInt(match[lineIndex], 10);
+    lineMap.set(lineNo, covered);
+  }
 }
 
 /**

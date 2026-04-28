@@ -49,11 +49,27 @@ export function validateCoverageDir(dir) {
   if (typeof dir !== 'string' || dir.trim().length === 0) {
     throw new Error('[crap4js] Invalid coverage directory: must be a non-empty string.');
   }
-  // Only police relative paths — absolute paths are intentional
-  const isAbsolute = resolve(dir) === dir || /^[a-zA-Z]:[\\/]/.test(dir);
-  if (!isAbsolute && dir.split(/[\\/]/).includes('..')) {
+
+  if (isAbsolutePath(dir) || isDrivePath(dir)) return;
+  throwIfTraversal(dir);
+}
+
+function throwIfTraversal(dir) {
+  if (hasTraversal(dir)) {
     throw new Error(`[crap4js] Coverage directory must not traverse outside the project: ${dir}`);
   }
+}
+
+function isAbsolutePath(dir) {
+  return resolve(dir) === dir;
+}
+
+function isDrivePath(dir) {
+  return /^[a-zA-Z]:[\/]/.test(dir);
+}
+
+function hasTraversal(dir) {
+  return dir.split(/[\/]/).includes('..');
 }
 
 /**
@@ -67,19 +83,24 @@ function readConfig() {
     sourceGlob: ['src/**/*.{js,mjs,ts,tsx}', '!**/*.test.*', '!**/node_modules/**'],
   };
 
+  const crap = loadPackageJson()?.crap ?? {};
+  const {
+    coverageCommand = defaults.coverageCommand,
+    coverageDir = defaults.coverageDir,
+    sourceGlob = defaults.sourceGlob,
+  } = crap;
+
+  return { coverageCommand, coverageDir, sourceGlob };
+}
+
+function loadPackageJson() {
   const pkgPath = resolve('package.json');
-  if (!existsSync(pkgPath)) return defaults;
+  if (!existsSync(pkgPath)) return null;
 
   try {
-    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
-    const crap = pkg.crap || {};
-    return {
-      coverageCommand: crap.coverageCommand || defaults.coverageCommand,
-      coverageDir: crap.coverageDir || defaults.coverageDir,
-      sourceGlob: crap.sourceGlob || defaults.sourceGlob,
-    };
+    return JSON.parse(readFileSync(pkgPath, 'utf8'));
   } catch {
-    return defaults;
+    return null;
   }
 }
 
@@ -127,40 +148,34 @@ function loadCoverageData(coverageDir, sourceFiles) {
 }
 
 function analyzeSourceFiles(filesToAnalyse, coverageData) {
-  const entries = [];
+  return filesToAnalyse.flatMap(filePath => analyzeFile(filePath, coverageData));
+}
 
-  for (const filePath of filesToAnalyse) {
-    let source;
-    try {
-      source = readFileSync(filePath, 'utf8');
-    } catch (err) {
-      console.error(`[crap4js] Warning: could not read ${filePath}: ${err.message}`);
-      continue;
-    }
-
-    let functions;
-    try {
-      functions = extractFunctions(source, filePath);
-    } catch (err) {
-      console.error(`[crap4js] Warning: parse error in ${filePath}: ${err.message}`);
-      continue;
-    }
-
-    const fileLines = coverageData.get(filePath);
-    for (const fn of functions) {
-      const cov = coverageFraction(fileLines, fn.startLine, fn.endLine);
-      const crap = crapScore(fn.cc, cov);
-      entries.push({
-        name: fn.name,
-        file: fn.file,
-        cc: fn.cc,
-        coverage: cov,
-        crap,
-      });
-    }
+function analyzeFile(filePath, coverageData) {
+  let source;
+  try {
+    source = readFileSync(filePath, 'utf8');
+  } catch (err) {
+    console.error(`[crap4js] Warning: could not read ${filePath}: ${err.message}`);
+    return [];
   }
 
-  return entries;
+  let functions;
+  try {
+    functions = extractFunctions(source, filePath);
+  } catch (err) {
+    console.error(`[crap4js] Warning: parse error in ${filePath}: ${err.message}`);
+    return [];
+  }
+
+  const fileLines = coverageData.get(filePath);
+  return functions.map(fn => ({
+    name: fn.name,
+    file: fn.file,
+    cc: fn.cc,
+    coverage: coverageFraction(fileLines, fn.startLine, fn.endLine),
+    crap: crapScore(fn.cc, coverageFraction(fileLines, fn.startLine, fn.endLine)),
+  }));
 }
 
 /**
@@ -173,18 +188,23 @@ function analyzeSourceFiles(filesToAnalyse, coverageData) {
 function coverageFraction(fileLines, startLine, endLine) {
   if (!fileLines) return null;
 
+  const { instrumented, covered } = coverageCounts(fileLines, startLine, endLine);
+  return instrumented === 0 ? null : covered / instrumented;
+}
+
+function coverageCounts(fileLines, startLine, endLine) {
   let instrumented = 0;
   let covered = 0;
 
   for (let line = startLine; line <= endLine; line++) {
-    if (fileLines.has(line)) {
+    const isCovered = fileLines.get(line);
+    if (isCovered !== undefined) {
       instrumented++;
-      if (fileLines.get(line)) covered++;
+      if (isCovered) covered++;
     }
   }
 
-  if (instrumented === 0) return null;
-  return covered / instrumented;
+  return { instrumented, covered };
 }
 
 /**
@@ -201,15 +221,23 @@ function coverageFraction(fileLines, startLine, endLine) {
  */
 function normalizeRunOptions(options, config) {
   return {
-    coverageDir: options.coverageDir || config.coverageDir,
-    coverageCmd: options.coverageCmd || config.coverageCommand,
-    filters: options.filters || [],
-    sourceGlob: options.sourceGlob || config.sourceGlob,
-    format: options.format || 'text',
+    coverageDir: getOrDefault(options.coverageDir, config.coverageDir),
+    coverageCmd: getOrDefault(options.coverageCmd, config.coverageCommand),
+    filters: getOrDefault(options.filters, []),
+    sourceGlob: getOrDefault(options.sourceGlob, config.sourceGlob),
+    format: getOrDefault(options.format, 'text'),
     reportFile: options.reportFile,
-    shouldDelete: options.delete !== false,
-    shouldRunCoverage: options.runCoverage !== false,
+    shouldDelete: notFalse(options.delete),
+    shouldRunCoverage: notFalse(options.runCoverage),
   };
+}
+
+function getOrDefault(value, fallback) {
+  return value === undefined ? fallback : value;
+}
+
+function notFalse(value) {
+  return value !== false;
 }
 
 function maybeRunCoverage(shouldRunCoverage, coverageCmd, format) {
@@ -259,7 +287,7 @@ export function run(options = {}) {
 }
 
 // CLI setup — only runs when imported by cli.mjs or invoked directly
-export function cli(argv) {
+function createCliProgram() {
   const program = new Command();
 
   program
@@ -271,20 +299,27 @@ export function cli(argv) {
     .option('--report-file <path>', 'write a dedicated report file')
     .option('--no-delete', 'skip deleting coverage dir before run')
     .option('--format <format>', 'output format: text, markdown, html', 'text')
-    .action((filters, opts) => {
-      const result = run({
-        filters,
-        coverageDir: opts.coverageDir,
-        coverageCmd: opts.coverageCmd,
-        reportFile: opts.reportFile,
-        delete: opts.delete,
-        format: opts.format,
-      });
+    .action(handleCliAction);
 
-      console.log(result.output);
-      process.exitCode = result.exitCode;
-    });
+  return program;
+}
 
+function handleCliAction(filters, opts) {
+  const result = run({
+    filters,
+    coverageDir: opts.coverageDir,
+    coverageCmd: opts.coverageCmd,
+    reportFile: opts.reportFile,
+    delete: opts.delete,
+    format: opts.format,
+  });
+
+  console.log(result.output);
+  process.exitCode = result.exitCode;
+}
+
+export function cli(argv) {
+  const program = createCliProgram();
   program.parse(argv || process.argv);
 }
 
