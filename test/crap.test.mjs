@@ -208,4 +208,59 @@ describe('formatReport', () => {
     const report = formatReport(entries, 'html');
     expect(report).toMatch(/<p>1 functions at high risk, 1 at moderate\.<\/p>/);
   });
+
+  // ── JSON format ──────────────────────────────────────────────────
+
+  describe('json format', () => {
+    const jsonEntries = [
+      { id: 'src/auth/validator.mjs:1:simpleFn', name: 'simpleFn', file: 'src/auth/validator.mjs', startLine: 1, endLine: 3, cc: 1, coverage: { covered: 3, instrumented: 3, percentage: 1.0 }, crap: 1, risk: 'low' },
+      { id: 'src/auth/validator.mjs:5:complexFn', name: 'complexFn', file: 'src/auth/validator.mjs', startLine: 5, endLine: 15, cc: 12, coverage: { covered: 2, instrumented: 5, percentage: 0.4 }, crap: 35.958, risk: 'high' },
+      { id: 'src/auth/validator.mjs:20:anon', name: '<anonymous:47>', file: 'src/auth/validator.mjs', startLine: 20, endLine: 25, cc: 4, coverage: { covered: 0, instrumented: 4, percentage: 0.0 }, crap: 20, risk: 'moderate' },
+      { id: 'src/util/helpers.mjs:1:unknown', name: 'unknownFn', file: 'src/util/helpers.mjs', startLine: 1, endLine: 2, cc: 3, coverage: { covered: 0, instrumented: 0, percentage: null }, crap: null, risk: null },
+    ];
+
+    it('produces valid JSON with expected schema', () => {
+      const report = formatReport(jsonEntries, 'json');
+      const parsed = JSON.parse(report);
+      expect(Array.isArray(parsed)).toBe(true);
+      expect(parsed[0]).toMatchObject({
+        id: expect.any(String),
+        name: 'complexFn',
+        file: 'src/auth/validator.mjs',
+        startLine: 5,
+        endLine: 15,
+        cc: 12,
+        coverage: { covered: 2, instrumented: 5, percentage: 0.4 },
+        crap: 35.958,
+        risk: 'high',
+      });
+    });
+
+    it('sorts descending by CRAP, null-coverage last', () => {
+      const report = formatReport(jsonEntries, 'json');
+      const parsed = JSON.parse(report);
+      expect(parsed[0].name).toBe('complexFn');
+      expect(parsed[1].name).toBe('<anonymous:47>');
+      expect(parsed[2].name).toBe('simpleFn');
+      expect(parsed[3].name).toBe('unknownFn');
+    });
+
+    it('preserves null handling for uncovered entries', () => {
+      const report = formatReport(jsonEntries, 'json');
+      const parsed = JSON.parse(report);
+      const unknown = parsed.find(e => e.name === 'unknownFn');
+      expect(unknown.crap).toBeNull();
+      expect(unknown.risk).toBeNull();
+      expect(unknown.coverage.percentage).toBeNull();
+    });
+
+    it('includes risk values', () => {
+      const report = formatReport(jsonEntries, 'json');
+      const parsed = JSON.parse(report);
+      expect(parsed[0].risk).toBe('high');
+      expect(parsed[1].risk).toBe('moderate');
+      expect(parsed[2].risk).toBe('low');
+      expect(parsed[3].risk).toBeNull();
+    });
+  });
 });

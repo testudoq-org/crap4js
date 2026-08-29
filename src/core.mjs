@@ -1,13 +1,22 @@
 /**
- * core.mjs — CLI orchestrator for crap4js
+ * @typedef {object} FunctionReportEntry
+ * @property {string} id
+ * @property {string} name
+ * @property {string} file
+ * @property {number} startLine
+ * @property {number} endLine
+ * @property {number} cc
+ * @property {{ covered: number, instrumented: number, percentage: number | null }} coverage
+ * @property {number|null} crap
+ * @property {'low'|'moderate'|'high'|null} risk
  */
 /* eslint-env node */
-/* global console, process */
 
 import { extractFunctions } from './complexity.mjs';
 import { loadCoverage } from './coverage.mjs';
-import { crapScore, formatReport } from './crap.mjs';
+import { crapScore, formatReport, riskLevel } from './crap.mjs';
 import { extractCrapReportBlock } from './extract.mjs';
+import { CRAP4JS_PROFILE } from './env.mjs';
 import { globbySync } from 'globby';
 import { execSync } from 'child_process';
 import { readFileSync, rmSync, existsSync, writeFileSync, mkdirSync } from 'fs';
@@ -15,11 +24,29 @@ import { Command } from 'commander';
 import { dirname, resolve } from 'path';
 import { pathToFileURL } from 'url';
 
+// ── Validation ──────────────────────────────────────────────────────
+
 /** Known safe runner prefixes for coverage commands. */
 const ALLOWED_RUNNERS = ['vitest', 'jest', 'c8', 'nyc', 'npx', 'node', 'npm', 'pnpm', 'yarn'];
 
 /** Shell metacharacters that indicate command injection. */
 const SHELL_META = /[;|&$`(){}!<>\n\r]/;
+
+/**
+ * Time a synchronous phase when CRAP4JS_PROFILE is enabled.
+ * Zero overhead when disabled.
+ * @param {string} name
+ * @param {() => T} fn
+ * @returns {T}
+ */
+function phase(name, fn) {
+  if (!CRAP4JS_PROFILE) return fn();
+  const start = process.hrtime.bigint();
+  const result = fn();
+  const elapsed = Number(process.hrtime.bigint() - start) / 1_000_000;
+  console.error(`[PROFILE] ${name}:${' '.repeat(Math.max(0, 26 - name.length))}${elapsed.toFixed(0)}ms`);
+  return result;
+}
 
 /**
  * Validate a coverage command against injection risks.
@@ -88,6 +115,8 @@ function hasTraversal(dir) {
   return dir.split('/').includes('..');
 }
 
+// ── Configuration ──────────────────────────────────────────────────
+
 /**
  * Read the "crap" config block from package.json in cwd.
  * @returns {{ coverageCommand: string, coverageDir: string, sourceGlob: string[] }}
@@ -120,6 +149,8 @@ function loadPackageJson() {
   }
 }
 
+// ── Coverage execution ─────────────────────────────────────────────
+
 function executeCoverageCommand(coverageCmd, format) {
   const covStdio = coverageStdio(format);
   try {
@@ -144,6 +175,8 @@ function reportCoverageCommandError(err) {
   }
 }
 
+// ── Source discovery ────────────────────────────────────────────────
+
 function loadSourceFiles(sourceGlob) {
   return globbySync(sourceGlob).map(f => f.replace(/\\/g, '/'));
 }
@@ -152,6 +185,8 @@ function filterSourceFiles(sourceFiles, filters) {
   if (!filters.length) return sourceFiles;
   return sourceFiles.filter(f => filters.some(frag => f.includes(frag)));
 }
+
+// ── I/O ────────────────────────────────────────────────────────────
 
 function writeReportFile(output, reportFile) {
   if (!reportFile) return;
@@ -187,6 +222,8 @@ function loadCoverageData(coverageDir, sourceFiles) {
   return loadCoverage(coverageDir, sourceFileSet);
 }
 
+// ── Analysis ───────────────────────────────────────────────────────
+
 function analyzeSourceFiles(filesToAnalyse, coverageData) {
   return filesToAnalyse.flatMap(filePath => analyzeFile(filePath, coverageData));
 }
@@ -209,41 +246,56 @@ function analyzeFile(filePath, coverageData) {
   }
 
   const fileLines = coverageData.get(filePath);
-  return functions.map(fn => ({
-    name: fn.name,
-    file: fn.file,
-    cc: fn.cc,
-    coverage: coverageFraction(fileLines, fn.startLine, fn.endLine),
-    crap: crapScore(fn.cc, coverageFraction(fileLines, fn.startLine, fn.endLine)),
-  }));
+  const sortedKeys = buildCoverageIndex(fileLines);
+  return functions.map(fn => {
+    const { covered, instrumented } = coverageCounts(fileLines, fn.startLine, fn.endLine, sortedKeys);
+    const fraction = instrumented === 0 ? null : covered / instrumented;
+    const crap = crapScore(fn.cc, fraction);
+    return {
+      id: `${fn.file}:${fn.startLine}:${fn.name}`,
+      name: fn.name,
+      file: fn.file,
+      startLine: fn.startLine,
+      endLine: fn.endLine,
+      cc: fn.cc,
+      coverage: {
+        covered,
+        instrumented,
+        percentage: fraction,
+      },
+      crap,
+      risk: riskLevel(crap),
+    };
+  });
 }
 
-/**
- * Compute coverage fraction for a function within [startLine..endLine].
- * @param {Map<number, boolean>|undefined} fileLines
- * @param {number} startLine
- * @param {number} endLine
- * @returns {number|null}
- */
-function coverageFraction(fileLines, startLine, endLine) {
+function buildCoverageIndex(fileLines) {
   if (!fileLines) return null;
+  return [...fileLines.keys()].sort((a, b) => a - b);
+}
 
-  const { instrumented, covered } = coverageCounts(fileLines, startLine, endLine);
+export function coverageFraction(fileLines, startLine, endLine, sortedKeys) {
+  const { instrumented, covered } = coverageCounts(fileLines, startLine, endLine, sortedKeys);
   return instrumented === 0 ? null : covered / instrumented;
 }
 
-function coverageCounts(fileLines, startLine, endLine) {
-  let instrumented = 0;
-  let covered = 0;
+export function coverageCounts(fileLines, startLine, endLine, sortedKeys) {
+  if (!fileLines) return { instrumented: 0, covered: 0 };
+  if (!sortedKeys || sortedKeys.length === 0) return { instrumented: 0, covered: 0 };
 
-  for (let line = startLine; line <= endLine; line++) {
-    const isCovered = fileLines.get(line);
-    if (isCovered !== undefined) {
-      instrumented++;
-      if (isCovered) covered++;
-    }
+  // Binary search: first key >= startLine
+  let lo = 0, hi = sortedKeys.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (sortedKeys[mid] < startLine) lo = mid + 1;
+    else hi = mid;
   }
 
+  let instrumented = 0, covered = 0;
+  for (let i = lo; i < sortedKeys.length && sortedKeys[i] <= endLine; i++) {
+    instrumented++;
+    if (fileLines.get(sortedKeys[i])) covered++;
+  }
   return { instrumented, covered };
 }
 
@@ -294,6 +346,8 @@ function maybeDeleteCoverageDir(coverageDir, shouldDelete) {
   }
 }
 
+// ── Rendering ──────────────────────────────────────────────────────
+
 function finalizeRunOutput(entries, coverageCommandFailed, coverageLoaded, reportFile, rawReportFile, format) {
   const output = renderFinalOutput(entries, coverageCommandFailed, coverageLoaded, reportFile, rawReportFile, format);
   return { output, exitCode: finalRunExitCode(entries, coverageCommandFailed, coverageLoaded) };
@@ -310,6 +364,8 @@ function renderFinalOutput(entries, coverageCommandFailed, coverageLoaded, repor
   return output;
 }
 
+// ── Exit code ──────────────────────────────────────────────────────
+
 function finalRunExitCode(entries, coverageCommandFailed, coverageLoaded) {
   if (coverageCommandFailed && !coverageLoaded) return 1;
   return entries.some(e => e.crap != null && e.crap > 30) ? 1 : 0;
@@ -319,20 +375,23 @@ export function run(options = {}) {
   const config = readConfig();
   const opts = normalizeRunOptions(options, config);
 
+  // Note: phases are intentionally merged where sub-phases are not
+  // bottlenecks. Coverage matching is inside AST parse + complexity;
+  // CRAP calculation is merged with sorting + formatting.
   validateCoverageDir(opts.coverageDir);
   maybeDeleteCoverageDir(opts.coverageDir, opts.shouldDelete);
-  const coverageCommandFailed = maybeRunCoverage(opts.shouldRunCoverage, opts.coverageCmd, opts.format);
+  const coverageCommandFailed = phase('coverage command', () => maybeRunCoverage(opts.shouldRunCoverage, opts.coverageCmd, opts.format));
 
-  const sourceFiles = loadSourceFiles(opts.sourceGlob);
-  const coverageData = loadCoverageData(opts.coverageDir, sourceFiles);
+  const sourceFiles = phase('source discovery', () => loadSourceFiles(opts.sourceGlob));
+  const coverageData = phase('coverage load', () => loadCoverageData(opts.coverageDir, sourceFiles));
   const coverageLoaded = coverageData.size > 0;
 
   if (coverageCommandFailed && !coverageLoaded) {
     console.error('[crap4js] Error: Coverage command failed and no coverage data was loaded. Fix the workspace tests/coverage pipeline and rerun.');
   }
 
-  const entries = analyzeSourceFiles(filterSourceFiles(sourceFiles, opts.filters), coverageData);
-  return finalizeRunOutput(entries, coverageCommandFailed, coverageLoaded, opts.reportFile, opts.rawReportFile, opts.format);
+  const entries = phase('AST parse + complexity', () => analyzeSourceFiles(filterSourceFiles(sourceFiles, opts.filters), coverageData));
+  return phase('CRAP calculation + sorting + formatting', () => finalizeRunOutput(entries, coverageCommandFailed, coverageLoaded, opts.reportFile, opts.rawReportFile, opts.format));
 }
 
 // CLI setup — only runs when imported by cli.mjs or invoked directly
@@ -348,7 +407,7 @@ function createCliProgram() {
     .option('--report-file <path>', 'write a dedicated report file')
     .option('--raw-report-file <path>', 'write a raw report file with only the boundary-delimited report block')
     .option('--no-delete', 'skip deleting coverage dir before run')
-    .option('--format <format>', 'output format: text, markdown, html', 'text')
+    .option('--format <format>', 'output format: text, markdown, html, json', 'text')
     .action(handleCliAction);
 
   return program;

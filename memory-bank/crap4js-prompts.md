@@ -1018,3 +1018,11 @@ Review the repository for any references to the MIT license and replace them wit
 Moved to docs\specs\prompt-18-improvecrapreport-io-spec.md
 
 Going forward all prompts will be stored within docs\specs\ for easier maintenance and accessibility. The file pattern will follow similar to prompt-XX-description-of-feature-spec.md eg prompt-18-improvecrapreport-io-spec.md
+
+---
+
+## Prompt 20 — Performance Enhancements
+
+```
+Moved to docs\spec\prompt-20-performance-enhancements.md
+```

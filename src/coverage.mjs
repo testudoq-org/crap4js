@@ -2,7 +2,6 @@
  * coverage.mjs — LCOV parser + HTML fallback
  * Returns a Map<filePath, Map<lineNumber, covered>>
  */
-/* global console */
 
 import { readFileSync, existsSync } from 'fs';
 import { resolve, relative, join } from 'path';
@@ -44,18 +43,48 @@ function suffixMatch(lcovPath, knownPaths) {
   return null;
 }
 
+function buildPathIndex(sourceFiles) {
+  const normalisedPathMap = new Map();
+  const suffixIndex = new Map();
+
+  for (const path of sourceFiles) {
+    normalisedPathMap.set(path, path);
+    const segments = path.split('/');
+    for (let n = 1; n <= segments.length; n++) {
+      const suffix = segments.slice(-n).join('/');
+      if (!suffixIndex.has(suffix)) suffixIndex.set(suffix, []);
+      suffixIndex.get(suffix).push(path);
+    }
+  }
+
+  return { normalisedPathMap, suffixIndex };
+}
+
+function suffixMatchIndexed(lcovPath, suffixIndex) {
+  const segments = lcovPath.replace(/\\/g, '/').split('/');
+  for (let n = segments.length; n >= 1; n--) {
+    const suffix = segments.slice(-n).join('/');
+    const matches = suffixIndex.get(suffix);
+    if (matches && matches.length > 0) return matches[0]; // deterministic: first match
+  }
+  return null;
+}
+
 function isCompiledOutputPath(path) {
   return /(?:^|[/\\])(dist|build)(?:[/\\]|$)/i.test(path);
 }
 
-function resolveLcovSource(raw, sourceFiles) {
+function resolveLcovSource(raw, sourceFiles, pathIndex) {
   const normalised = normalisePath(raw);
-  if (!sourceFiles || sourceFiles.has(normalised)) {
-    return normalised;
-  }
+  if (pathIndex && pathIndex.normalisedPathMap.has(normalised)) return normalised;
 
-  const suffixed = suffixMatch(normalised, sourceFiles);
-  if (suffixed) return suffixed;
+  if (pathIndex) {
+    const suffixed = suffixMatchIndexed(normalised, pathIndex.suffixIndex);
+    if (suffixed) return suffixed;
+  } else if (sourceFiles) {
+    const suffixed = suffixMatch(normalised, sourceFiles);
+    if (suffixed) return suffixed;
+  }
 
   console.error(`[crap4js] Warning: no source file matches LCOV path: ${raw}`);
   return normalised;
@@ -76,6 +105,7 @@ function logLcovDebug(raw, normalised, resolved, sourceFiles) {
  * @returns {Map<string, Map<number, boolean>>}
  */
 function parseLcov(lcovContent, sourceFiles) {
+  const pathIndex = sourceFiles ? buildPathIndex(sourceFiles) : null;
   const coverage = new Map();
   const state = {
     currentFile: null,
@@ -85,7 +115,7 @@ function parseLcov(lcovContent, sourceFiles) {
   };
 
   const handlers = {
-    SF: (line) => handleSourceFile(line, state, coverage, sourceFiles),
+    SF: (line) => handleSourceFile(line, state, coverage, pathIndex),
     DA: (line) => handleDataLine(line, state),
   };
 
@@ -109,7 +139,7 @@ function processLcovLine(line, handlers, state) {
   }
 }
 
-function handleSourceFile(line, state, coverage, sourceFiles) {
+function handleSourceFile(line, state, coverage, pathIndex) {
   const raw = line.slice(3);
   const normalised = normalisePath(raw);
   state.totalFileCount++;
@@ -118,8 +148,8 @@ function handleSourceFile(line, state, coverage, sourceFiles) {
     state.distPathCount++;
   }
 
-  state.currentFile = resolveLcovSource(raw, sourceFiles);
-  logLcovDebug(raw, normalised, state.currentFile, sourceFiles);
+  state.currentFile = resolveLcovSource(raw, null, pathIndex);
+  logLcovDebug(raw, normalised, state.currentFile, pathIndex ? [...pathIndex.normalisedPathMap.keys()] : null);
   state.currentMap = coverage.get(state.currentFile) || new Map();
   coverage.set(state.currentFile, state.currentMap);
 }

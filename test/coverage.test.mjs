@@ -264,4 +264,67 @@ describe('coverage.mjs', () => {
       expect(result.size).toBe(0);
     });
   });
+
+  describe('P3 path index parity', () => {
+    it('resolves the same keys as linear suffixMatch for nested paths', () => {
+      const lcov = [
+        'SF:/home/ci/project/src/auth/validator.mjs',
+        'DA:1,1',
+        'end_of_record',
+        'SF:/home/ci/project/src/utils/helpers.mjs',
+        'DA:1,1',
+        'end_of_record',
+      ].join('\n');
+
+      const sourceFiles = new Set(['src/auth/validator.mjs', 'src/utils/helpers.mjs']);
+
+      const result = parseLcov(lcov, sourceFiles);
+      expect(result.has('src/auth/validator.mjs')).toBe(true);
+      expect(result.has('src/utils/helpers.mjs')).toBe(true);
+    });
+
+    it('resolves the same keys for overlapping suffixes', () => {
+      const lcov = [
+        'SF:/monorepo/packages/app/src/components/Button.mjs',
+        'DA:1,1',
+        'end_of_record',
+        'SF:/monorepo/packages/lib/src/components/Button.mjs',
+        'DA:1,1',
+        'end_of_record',
+      ].join('\n');
+
+      const sourceFiles = new Set([
+        'packages/app/src/components/Button.mjs',
+        'packages/lib/src/components/Button.mjs',
+      ]);
+
+      const result = parseLcov(lcov, sourceFiles);
+      // Should resolve to first matching source file (deterministic)
+      const keys = [...result.keys()];
+      expect(keys.length).toBe(2);
+      expect(keys.every(k => k.includes('Button.mjs'))).toBe(true);
+    });
+
+    it('produces identical result set to old suffixMatch for mixed direct+suffix paths', () => {
+      const lcov = [
+        'SF:src/foo.mjs',
+        'DA:1,1',
+        'end_of_record',
+        'SF:/deep/nested/src/bar.mjs',
+        'DA:1,1',
+        'end_of_record',
+        'SF:src/baz.mjs',
+        'DA:1,1',
+        'end_of_record',
+      ].join('\n');
+
+      const sourceFiles = new Set(['src/foo.mjs', 'src/bar.mjs', 'src/baz.mjs']);
+      const result = parseLcov(lcov, sourceFiles);
+
+      expect(result.size).toBe(3);
+      expect(result.has('src/foo.mjs')).toBe(true);
+      expect(result.has('src/bar.mjs')).toBe(true);
+      expect(result.has('src/baz.mjs')).toBe(true);
+    });
+  });
 });

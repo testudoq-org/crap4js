@@ -136,27 +136,9 @@ function nodeComplexity(node) {
   return COMPLEXITY_HANDLERS[node.type]?.(node) || 0;
 }
 
-function countCC(functionPath) {
-  let cc = 1; // base complexity
-
-  functionPath.traverse({
-    enter(innerPath) {
-      const node = innerPath.node;
-
-      if (FUNCTION_TYPES.has(node.type) && innerPath !== functionPath) {
-        innerPath.skip();
-        return;
-      }
-
-      cc += nodeComplexity(node);
-    },
-  });
-
-  return cc;
-}
-
 /**
  * Extract all functions from a source file with their CC scores.
+ * Single-pass traversal using a function-context stack.
  * @param {string} source
  * @param {string} filePath
  * @returns {FunctionEntry[]}
@@ -169,17 +151,30 @@ export function extractFunctions(source, filePath) {
   });
 
   const functions = [];
+  const stack = [];
+
+  const functionVisitors = {};
+  for (const type of FUNCTION_TYPES) {
+    functionVisitors[type] = {
+      enter(path) {
+        const name = resolveName(path);
+        const startLine = path.node.loc?.start.line ?? 0;
+        const endLine = path.node.loc?.end.line ?? 0;
+        stack.push({ name, file: filePath, startLine, endLine, cc: 1 });
+      },
+      exit() {
+        functions.push(stack.pop());
+      },
+    };
+  }
 
   traverse(ast, {
+    ...functionVisitors,
     enter(path) {
-      if (!FUNCTION_TYPES.has(path.node.type)) return;
-
-      const name = resolveName(path);
-      const startLine = path.node.loc ? path.node.loc.start.line : 0;
-      const endLine = path.node.loc ? path.node.loc.end.line : 0;
-      const cc = countCC(path);
-
-      functions.push({ name, file: filePath, startLine, endLine, cc });
+      if (FUNCTION_TYPES.has(path.node.type)) return;
+      if (stack.length > 0) {
+        stack[stack.length - 1].cc += nodeComplexity(path.node);
+      }
     },
   });
 

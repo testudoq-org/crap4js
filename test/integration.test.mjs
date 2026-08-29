@@ -355,4 +355,43 @@ describe('integration', () => {
     expect(result.output).toContain('Coverage command failed');
     expect(result.output).toContain('CRAP Report');
   });
+
+  it('produces valid JSON when --format json is used', () => {
+    const srcDir = join(tempDir, 'src');
+    mkdirSync(srcDir, { recursive: true });
+    writeFileSync(join(srcDir, 'good.mjs'), 'export function good() { return 1; }');
+
+    const covDir = join(tempDir, 'coverage');
+    mkdirSync(covDir, { recursive: true });
+    writeFileSync(join(covDir, 'lcov.info'), [`SF:${join(srcDir, 'good.mjs').replace(/\\/g, '/')}`, 'DA:1,1', 'DA:2,1', 'end_of_record'].join('\n'));
+
+    const result = run({
+      filters: [],
+      coverageDir: covDir,
+      sourceGlob: [join(srcDir, '**/*.mjs').replace(/\\/g, '/')],
+      delete: false,
+      runCoverage: false,
+      format: 'json',
+    });
+
+    expect(result.exitCode).toBe(0);
+    const parsed = JSON.parse(result.output);
+    expect(Array.isArray(parsed)).toBe(true);
+    expect(parsed.length).toBeGreaterThanOrEqual(1);
+    expect(parsed[0]).toMatchObject({
+      id: expect.stringContaining('good.mjs'),
+      name: 'good',
+      file: expect.stringContaining('good.mjs'),
+      startLine: expect.any(Number),
+      endLine: expect.any(Number),
+      cc: expect.any(Number),
+      coverage: {
+        covered: expect.any(Number),
+        instrumented: expect.any(Number),
+        percentage: expect.any(Number),
+      },
+      crap: expect.any(Number),
+      risk: expect.any(String),
+    });
+  });
 });

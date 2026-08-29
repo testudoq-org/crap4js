@@ -279,4 +279,60 @@ function b() {
       expect(fns[1].endLine).toBe(7);
     });
   });
+
+  describe('single-pass parity', () => {
+    it('nested functions: produces identical entries to expected output', () => {
+      const fns = extractFunctions(`
+        function outer() {
+          if (a) {}
+          function inner() {
+            if (b) {}
+            if (c) {}
+          }
+        }
+      `, file);
+      expect(fns).toEqual([
+        { name: 'inner', file, startLine: 4, endLine: 7, cc: 3 },
+        { name: 'outer', file, startLine: 2, endLine: 8, cc: 2 },
+      ]);
+    });
+
+    it('class with method: produces correct entry', () => {
+      const fns = extractFunctions(`
+        class Validator {
+          check(input) {
+            if (!input) return false;
+            return input.length > 0;
+          }
+        }
+      `, file);
+      expect(fns).toEqual([
+        { name: 'Validator.check', file, startLine: 3, endLine: 6, cc: 2 },
+      ]);
+    });
+
+    it('anonymous callback in array method: produces correct entry', () => {
+      const fns = extractFunctions(`
+        const items = [1, 2, 3];
+        const result = items.filter(x => x > 0 && x < 10);
+      `, file);
+      const anon = fns.find(f => f.name.startsWith('<anonymous:'));
+      expect(anon).toBeDefined();
+      expect(anon.file).toBe(file);
+      expect(anon.startLine).toBeGreaterThan(0);
+      expect(anon.endLine).toBeGreaterThanOrEqual(anon.startLine);
+      expect(anon.cc).toBeGreaterThanOrEqual(1);
+    });
+
+    it('arrow assigned via variable declarator and assignment expression', () => {
+      const fns = extractFunctions(`
+        const handler = () => {};
+        foo = () => {};
+      `, file);
+      expect(fns).toEqual([
+        { name: 'handler', file, startLine: 2, endLine: 2, cc: 1 },
+        { name: 'foo', file, startLine: 3, endLine: 3, cc: 1 },
+      ]);
+    });
+  });
 });

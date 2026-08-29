@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CRAP Report</title>
+<style>
+body { font-family: sans-serif; margin: 2em; }
+table { border-collapse: collapse; font-family: monospace; }
+th, td { padding: 4px 8px; border: 1px solid #ddd; }
+th { background: #f5f5f5; }
+.risk-low { color: green; }
+.risk-moderate { color: orange; }
+.risk-high { color: red; font-weight: bold; }
+.risk-na { color: #999; }
+</style>
+</head>
+<body>
+<h2>CRAP Report</h2>
+<table>
+<thead><tr><th>Function</th><th>File</th><th>CC</th><th>Cov%</th><th>CRAP</th><th>Risk</th></tr></thead>
+<tbody>
+<tr><td>coverageCounts</td><td>src/core.mjs</td><td>9</td><td>100.0%</td><td>9.0</td><td class="risk-moderate">moderate</td></tr>
+<tr><td>resolveLcovSource</td><td>src/coverage.mjs</td><td>7</td><td>80.0%</td><td>7.4</td><td class="risk-moderate">moderate</td></tr>
+<tr><td>handleSourceFile</td><td>src/coverage.mjs</td><td>5</td><td>100.0%</td><td>5.0</td><td class="risk-moderate">moderate</td></tr>
+<tr><td>extractCrapReportBlock</td><td>src/extract.mjs</td><td>5</td><td>100.0%</td><td>5.0</td><td class="risk-moderate">moderate</td></tr>
+<tr><td>resolveKeyName</td><td>src/complexity.mjs</td><td>3</td><td>40.0%</td><td>4.9</td><td class="risk-low">low</td></tr>
+<tr><td>maybeDeleteCoverageDir</td><td>src/core.mjs</td><td>3</td><td>50.0%</td><td>4.1</td><td class="risk-low">low</td></tr>
+<tr><td>writeRawReportFile</td><td>src/core.mjs</td><td>4</td><td>86.7%</td><td>4.0</td><td class="risk-low">low</td></tr>
+<tr><td>classNameFromParent</td><td>src/complexity.mjs</td><td>4</td><td>100.0%</td><td>4.0</td><td class="risk-low">low</td></tr>
+<tr><td>variableDeclaratorName</td><td>src/complexity.mjs</td><td>4</td><td>100.0%</td><td>4.0</td><td class="risk-low">low</td></tr>
+<tr><td>finalRunExitCode</td><td>src/core.mjs</td><td>4</td><td>100.0%</td><td>4.0</td><td class="risk-low">low</td></tr>
+<tr><td>suffixMatch</td><td>src/coverage.mjs</td><td>4</td><td>100.0%</td><td>4.0</td><td class="risk-low">low</td></tr>
+<tr><td>buildPathIndex</td><td>src/coverage.mjs</td><td>4</td><td>100.0%</td><td>4.0</td><td class="risk-low">low</td></tr>
+<tr><td>suffixMatchIndexed</td><td>src/coverage.mjs</td><td>4</td><td>100.0%</td><td>4.0</td><td class="risk-low">low</td></tr>
+<tr><td>parseLcov</td><td>src/coverage.mjs</td><td>4</td><td>100.0%</td><td>4.0</td><td class="risk-low">low</td></tr>
+<tr><td>handleDataLine</td><td>src/coverage.mjs</td><td>4</td><td>100.0%</td><td>4.0</td><td class="risk-low">low</td></tr>
+<tr><td>riskLevel</td><td>src/crap.mjs</td><td>4</td><td>100.0%</td><td>4.0</td><td class="risk-low">low</td></tr>
+<tr><td>riskCounts</td><td>src/crap.mjs</td><td>4</td><td>100.0%</td><td>4.0</td><td class="risk-low">low</td></tr>
+<tr><td>formatReport</td><td>src/crap.mjs</td><td>4</td><td>100.0%</td><td>4.0</td><td class="risk-low">low</td></tr>
+<tr><td>phase</td><td>src/core.mjs</td><td>2</td><td>25.0%</td><td>3.7</td><td class="risk-low">low</td></tr>
+<tr><td>cli</td><td>src/core.mjs</td><td>2</td><td>25.0%</td><td>3.7</td><td class="risk-low">low</td></tr>
+<tr><td>resolveAssignmentTargetName</td><td>src/complexity.mjs</td><td>3</td><td>60.0%</td><td>3.6</td><td class="risk-low">low</td></tr>
+<tr><td>loadPackageJson</td><td>src/core.mjs</td><td>3</td><td>80.0%</td><td>3.1</td><td class="risk-low">low</td></tr>
+<tr><td>writeReportFile</td><td>src/core.mjs</td><td>3</td><td>83.3%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>analyzeFile</td><td>src/core.mjs</td><td>3</td><td>85.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>objectMethodName</td><td>src/complexity.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>assignmentExpressionName</td><td>src/complexity.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>resolveName</td><td>src/complexity.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>nodeComplexity</td><td>src/complexity.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>enter</td><td>src/complexity.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>enter</td><td>src/complexity.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>validateCoverageDir</td><td>src/core.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>validateNonEmptyString</td><td>src/core.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:96&gt;</td><td>src/core.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>renderFinalOutput</td><td>src/core.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>run</td><td>src/core.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>normalisePath</td><td>src/coverage.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>logLcovDebug</td><td>src/coverage.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>loadCoverage</td><td>src/coverage.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>compareEntries</td><td>src/crap.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>fmtCov</td><td>src/crap.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>formatHtml</td><td>src/crap.mjs</td><td>3</td><td>100.0%</td><td>3.0</td><td class="risk-low">low</td></tr>
+<tr><td>filterSourceFiles</td><td>src/core.mjs</td><td>2</td><td>50.0%</td><td>2.5</td><td class="risk-low">low</td></tr>
+<tr><td>getClassMethodName</td><td>src/complexity.mjs</td><td>2</td><td>66.7%</td><td>2.1</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:66&gt;</td><td>src/complexity.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>functionExpressionName</td><td>src/complexity.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:105&gt;</td><td>src/complexity.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:109&gt;</td><td>src/complexity.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:110&gt;</td><td>src/complexity.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:129&gt;</td><td>src/complexity.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:130&gt;</td><td>src/complexity.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:131&gt;</td><td>src/complexity.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>extractFunctions</td><td>src/complexity.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>validateNoShellMetacharacters</td><td>src/core.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>validateAllowedCoverageRunner</td><td>src/core.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>throwIfTraversal</td><td>src/core.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>readConfig</td><td>src/core.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>executeCoverageCommand</td><td>src/core.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>coverageStdio</td><td>src/core.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>reportCoverageCommandError</td><td>src/core.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:187&gt;</td><td>src/core.mjs</td><td>1</td><td>0.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:187&gt;</td><td>src/core.mjs</td><td>1</td><td>0.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>buildCoverageIndex</td><td>src/core.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>coverageFraction</td><td>src/core.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>getOrDefault</td><td>src/core.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>maybeRunCoverage</td><td>src/core.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:380&gt;</td><td>src/core.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>createCliProgram</td><td>src/core.mjs</td><td>1</td><td>0.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>handleCliAction</td><td>src/core.mjs</td><td>1</td><td>0.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>processLcovLine</td><td>src/coverage.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>processHtmlFile</td><td>src/coverage.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>parseCoverageSpans</td><td>src/coverage.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>crapScore</td><td>src/crap.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>compareNullA</td><td>src/crap.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>fmtCrap</td><td>src/crap.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>fmtRisk</td><td>src/crap.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>truncate</td><td>src/crap.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>formatText</td><td>src/crap.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>formatMarkdown</td><td>src/crap.mjs</td><td>2</td><td>100.0%</td><td>2.0</td><td class="risk-low">low</td></tr>
+<tr><td>classMethodName</td><td>src/complexity.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>resolveClassName</td><td>src/complexity.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>exit</td><td>src/complexity.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>validateCoverageCmd</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>allowedCoverageRunner</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>isAbsolutePath</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>isDrivePath</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>hasTraversal</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:182&gt;</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>loadSourceFiles</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>loadCoverageData</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:229&gt;</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>analyzeSourceFiles</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:251&gt;</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:275&gt;</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>normalizeRunOptions</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>notFalse</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>finalizeRunOutput</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:389&gt;</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:391&gt;</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:392&gt;</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:399&gt;</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:400&gt;</td><td>src/core.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>isCompiledOutputPath</td><td>src/coverage.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:119&gt;</td><td>src/coverage.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:120&gt;</td><td>src/coverage.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:123&gt;</td><td>src/coverage.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:177&gt;</td><td>src/coverage.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>parseHtmlFallback</td><td>src/coverage.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>extractHtmlCoverage</td><td>src/coverage.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>sortEntries</td><td>src/crap.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>riskSummary</td><td>src/crap.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>pad</td><td>src/crap.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>rpad</td><td>src/crap.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>escapeHtml</td><td>src/crap.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:207&gt;</td><td>src/crap.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>formatJson</td><td>src/crap.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+<tr><td>&lt;anonymous:26&gt;</td><td>src/extract.mjs</td><td>1</td><td>100.0%</td><td>1.0</td><td class="risk-low">low</td></tr>
+</tbody>
+</table>
+<p>0 functions at high risk, 4 at moderate.</p>
+</body>
+</html>

@@ -55,7 +55,8 @@ function riskCounts(sorted) {
 
 /** Format coverage value for display. */
 function fmtCov(coverage) {
-  return coverage != null ? (coverage * 100).toFixed(1) + '%' : 'N/A';
+  const fraction = typeof coverage === 'number' ? coverage : coverage?.percentage;
+  return fraction != null ? (fraction * 100).toFixed(1) + '%' : 'N/A';
 }
 
 /** Format CRAP value for display. */
@@ -200,10 +201,26 @@ function formatHtml(sorted) {
   return lines.join('\n');
 }
 
+// ── JSON formatter ──────────────────────────────────────────────────
+
+function formatJson(sorted) {
+  return JSON.stringify(sorted.map(entry => ({
+    id: entry.id,
+    name: entry.name,
+    file: entry.file,
+    startLine: entry.startLine,
+    endLine: entry.endLine,
+    cc: entry.cc,
+    coverage: entry.coverage,
+    crap: entry.crap,
+    risk: entry.risk,
+  })), null, 2);
+}
+
 /**
  * Format the CRAP report table.
- * @param {Array<{name: string, file: string, cc: number, coverage: number|null, crap: number|null}>} entries
- * @param {'text'|'markdown'|'html'} [format='text']
+ * @param {Array<{id: string, name: string, file: string, startLine: number, endLine: number, cc: number, coverage: { covered: number, instrumented: number, percentage: number|null }, crap: number|null, risk: 'low'|'moderate'|'high'|null}>} entries
+ * @param {'text'|'markdown'|'html'|'json'} [format='text']
  * @returns {string}
  */
 export function formatReport(entries, format = 'text') {
@@ -211,5 +228,6 @@ export function formatReport(entries, format = 'text') {
 
   if (format === 'markdown') return formatMarkdown(sorted);
   if (format === 'html') return formatHtml(sorted);
+  if (format === 'json') return formatJson(sorted);
   return formatText(sorted);
 }
