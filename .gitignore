@@ -8,3 +8,10 @@ dist/
 #Ignore vscode AI rules
 .github\instructions\codacy.instructions.md
 crap-report.html
+
+# Kilo agent-local state
+.kilo/
+
+# Codacy generated caches (config is tracked via .codacy/codacy.yaml)
+.codacy/codacy.config.json
+.codacy/codacy.config.baseline.json
