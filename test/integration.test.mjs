@@ -3,6 +3,7 @@ import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, existsSync
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { run, validateCoverageCmd, validateCoverageDir } from '../src/core.mjs';
+import { extractCrapReportBlock } from '../src/extract.mjs';
 
 // ── Validation tests ────────────────────────────────────────────────
 
@@ -165,6 +166,121 @@ describe('integration', () => {
     expect(reportContents).toBe(result.output);
     expect(reportContents).toContain('## CRAP Report');
     expect(reportContents).toContain('0 functions at high risk, 0 at moderate.');
+  });
+
+  it('writes a raw report file with only the boundary-delimited block when rawReportFile is provided', () => {
+    const srcDir = join(tempDir, 'src');
+    mkdirSync(srcDir, { recursive: true });
+    writeFileSync(join(srcDir, 'good.mjs'), 'export function good() { return 1; }');
+
+    const covDir = join(tempDir, 'coverage');
+    mkdirSync(covDir, { recursive: true });
+    writeFileSync(join(covDir, 'lcov.info'), [`SF:${join(srcDir, 'good.mjs').replace(/\\/g, '/')}`, 'DA:1,1', 'DA:2,1', 'end_of_record'].join('\n'));
+
+    const reportFile = join(tempDir, 'CRAPReport.md');
+    const rawReportFile = join(tempDir, 'CRAPReport.raw.md');
+    const result = run({
+      filters: [],
+      coverageDir: covDir,
+      sourceGlob: [join(srcDir, '**/*.mjs').replace(/\\/g, '/')],
+      delete: false,
+      runCoverage: false,
+      format: 'text',
+      reportFile,
+      rawReportFile,
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(existsSync(reportFile)).toBe(true);
+    expect(existsSync(rawReportFile)).toBe(true);
+
+    const formattedContents = readFileSync(reportFile, 'utf8');
+    const rawContents = readFileSync(rawReportFile, 'utf8');
+
+    // Raw file must start with the report marker
+    expect(rawContents).toMatch(/^CRAP Report/);
+    // Raw file must match the boundary-delimited block extracted from formatted output
+    expect(rawContents).toBe(extractCrapReportBlock(formattedContents));
+    // Formatted file contains the full output
+    expect(formattedContents).toBe(result.output);
+  });
+
+  it('writes a raw report file with the full markdown report when format is markdown', () => {
+    const srcDir = join(tempDir, 'src');
+    mkdirSync(srcDir, { recursive: true });
+    writeFileSync(join(srcDir, 'good.mjs'), 'export function good() { return 1; }');
+
+    const covDir = join(tempDir, 'coverage');
+    mkdirSync(covDir, { recursive: true });
+    writeFileSync(join(covDir, 'lcov.info'), [`SF:${join(srcDir, 'good.mjs').replace(/\\/g, '/')}`, 'DA:1,1', 'DA:2,1', 'end_of_record'].join('\n'));
+
+    const reportFile = join(tempDir, 'CRAPReport.md');
+    const rawReportFile = join(tempDir, 'CRAPReport.raw.md');
+    const result = run({
+      filters: [],
+      coverageDir: covDir,
+      sourceGlob: [join(srcDir, '**/*.mjs').replace(/\\/g, '/')],
+      delete: false,
+      runCoverage: false,
+      format: 'markdown',
+      reportFile,
+      rawReportFile,
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(existsSync(reportFile)).toBe(true);
+    expect(existsSync(rawReportFile)).toBe(true);
+
+    const formattedContents = readFileSync(reportFile, 'utf8');
+    const rawContents = readFileSync(rawReportFile, 'utf8');
+
+    // Raw file preserves the format-specific start
+    expect(rawContents).toMatch(/^## CRAP Report/);
+    // Raw file has no coverage summary (no end marker found)
+    expect(rawContents).not.toContain('% Coverage report from');
+    // Raw file equals the boundary-delimited block extracted from formatted output
+    expect(rawContents).toBe(extractCrapReportBlock(formattedContents));
+    // Formatted file is the complete output
+    expect(formattedContents).toBe(result.output);
+  });
+
+  it('writes a raw report file with the full HTML report when format is html', () => {
+    const srcDir = join(tempDir, 'src');
+    mkdirSync(srcDir, { recursive: true });
+    writeFileSync(join(srcDir, 'good.mjs'), 'export function good() { return 1; }');
+
+    const covDir = join(tempDir, 'coverage');
+    mkdirSync(covDir, { recursive: true });
+    writeFileSync(join(covDir, 'lcov.info'), [`SF:${join(srcDir, 'good.mjs').replace(/\\/g, '/')}`, 'DA:1,1', 'DA:2,1', 'end_of_record'].join('\n'));
+
+    const reportFile = join(tempDir, 'CRAPReport.html');
+    const rawReportFile = join(tempDir, 'CRAPReport.raw.html');
+    const result = run({
+      filters: [],
+      coverageDir: covDir,
+      sourceGlob: [join(srcDir, '**/*.mjs').replace(/\\/g, '/')],
+      delete: false,
+      runCoverage: false,
+      format: 'html',
+      reportFile,
+      rawReportFile,
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(existsSync(reportFile)).toBe(true);
+    expect(existsSync(rawReportFile)).toBe(true);
+
+    const formattedContents = readFileSync(reportFile, 'utf8');
+    const rawContents = readFileSync(rawReportFile, 'utf8');
+
+    // Raw file preserves the format-specific start
+    expect(rawContents).toMatch(/^<!DOCTYPE html>/);
+    // Raw file has no coverage summary (no end marker found)
+    expect(rawContents).not.toContain('% Coverage report from');
+    // Raw file equals the boundary-delimited block extracted from formatted output
+    expect(rawContents).toBe(extractCrapReportBlock(formattedContents));
+    // Formatted file is the complete output
+    expect(formattedContents).toBe(result.output);
   });
 
   it('returns exit code 1 when a function scores > 30', () => {

@@ -105,6 +105,6 @@ riskSummary                    src/crap.mjs                            1   100.0
 pad                            src/crap.mjs                            1   100.0%      1.0  low       
 rpad                           src/crap.mjs                            1   100.0%      1.0  low       
 escapeHtml                     src/crap.mjs                            1   100.0%      1.0  low       
-<anonymous:26>                 src/extract.mjs                         1   100.0%      1.0  low       
+<anonymous:24>                 src/extract.mjs                         1   100.0%      1.0  low       
 
 0 functions at high risk, 1 at moderate.
