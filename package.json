@@ -55,13 +55,13 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@babel/parser": "^8.0",
-    "@babel/traverse": "^7.26",
+    "@babel/parser": "^7.26",
+    "@babel/traverse": "^8.0",
     "commander": "^13",
     "globby": "^14"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
+    "@eslint/js": "^10.0.1",
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/html-reporter": "^3.1.0",
     "@stryker-mutator/vitest-runner": "^9.6.1",
@@ -69,7 +69,7 @@
     "dry-4-js": "0.5.0-alpha.6",
     "eslint": "^9.0.0",
     "eslint-plugin-security": "^4.0.1",
-    "varlock": "^0.7.0",
+    "varlock": "^1.17.1",
     "vitest": "^4.1.11"
   }
 }
