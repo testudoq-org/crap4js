@@ -55,7 +55,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@babel/parser": "^7.26",
+    "@babel/parser": "^8.0",
     "@babel/traverse": "^7.26",
     "commander": "^13",
     "globby": "^14"
