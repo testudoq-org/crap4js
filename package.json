@@ -57,7 +57,7 @@
   "dependencies": {
     "@babel/parser": "^7.26",
     "@babel/traverse": "^8.0",
-    "commander": "^13",
+    "commander": "^15",
     "globby": "^14"
   },
   "devDependencies": {
