@@ -15,6 +15,7 @@
   "scripts": {
     "test": "vitest run",
     "crap": "node src/cli.mjs --report-file CRAPReport.md",
+    "crap:raw": "node src/cli.mjs --report-file CRAPReport.md --raw-report-file CRAPReport.raw.md",
     "mutation": "npx stryker run --config stryker.conf.mjs",
     "lint": "eslint src/ test/",
     "lint:env": "varlock check",

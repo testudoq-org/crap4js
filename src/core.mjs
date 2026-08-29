@@ -7,6 +7,7 @@
 import { extractFunctions } from './complexity.mjs';
 import { loadCoverage } from './coverage.mjs';
 import { crapScore, formatReport } from './crap.mjs';
+import { extractCrapReportBlock } from './extract.mjs';
 import { globbySync } from 'globby';
 import { execSync } from 'child_process';
 import { readFileSync, rmSync, existsSync, writeFileSync, mkdirSync } from 'fs';
@@ -165,6 +166,22 @@ function writeReportFile(output, reportFile) {
   }
 }
 
+function writeRawReportFile(rawReportFile, formattedOutput) {
+  if (!rawReportFile) return;
+
+  const block = extractCrapReportBlock(formattedOutput);
+  if (block === null) return;
+
+  const rawPath = resolve(rawReportFile);
+  const rawDir = dirname(rawPath);
+  try {
+    mkdirSync(rawDir, { recursive: true });
+    writeFileSync(rawPath, block, 'utf8');
+  } catch (err) {
+    console.error(`[crap4js] Warning: could not write raw report file ${rawPath}: ${err.message}`);
+  }
+}
+
 function loadCoverageData(coverageDir, sourceFiles) {
   const sourceFileSet = new Set(sourceFiles);
   return loadCoverage(coverageDir, sourceFileSet);
@@ -250,6 +267,7 @@ function normalizeRunOptions(options, config) {
     sourceGlob: getOrDefault(options.sourceGlob, config.sourceGlob),
     format: getOrDefault(options.format, 'text'),
     reportFile: options.reportFile,
+    rawReportFile: options.rawReportFile,
     shouldDelete: notFalse(options.delete),
     shouldRunCoverage: notFalse(options.runCoverage),
   };
@@ -276,18 +294,19 @@ function maybeDeleteCoverageDir(coverageDir, shouldDelete) {
   }
 }
 
-function finalizeRunOutput(entries, coverageCommandFailed, coverageLoaded, reportFile, format) {
-  const output = renderFinalOutput(entries, coverageCommandFailed, coverageLoaded, reportFile, format);
+function finalizeRunOutput(entries, coverageCommandFailed, coverageLoaded, reportFile, rawReportFile, format) {
+  const output = renderFinalOutput(entries, coverageCommandFailed, coverageLoaded, reportFile, rawReportFile, format);
   return { output, exitCode: finalRunExitCode(entries, coverageCommandFailed, coverageLoaded) };
 }
 
-function renderFinalOutput(entries, coverageCommandFailed, coverageLoaded, reportFile, format) {
+function renderFinalOutput(entries, coverageCommandFailed, coverageLoaded, reportFile, rawReportFile, format) {
   let output = formatReport(entries, format);
   if (coverageCommandFailed && !coverageLoaded) {
     output = '[crap4js] ERROR: Coverage command failed and no coverage data was loaded. Fix the workspace tests/coverage pipeline and rerun.\n\n' + output;
   }
 
   writeReportFile(output, reportFile);
+  writeRawReportFile(rawReportFile, output);
   return output;
 }
 
@@ -313,7 +332,7 @@ export function run(options = {}) {
   }
 
   const entries = analyzeSourceFiles(filterSourceFiles(sourceFiles, opts.filters), coverageData);
-  return finalizeRunOutput(entries, coverageCommandFailed, coverageLoaded, opts.reportFile, opts.format);
+  return finalizeRunOutput(entries, coverageCommandFailed, coverageLoaded, opts.reportFile, opts.rawReportFile, opts.format);
 }
 
 // CLI setup — only runs when imported by cli.mjs or invoked directly
@@ -327,6 +346,7 @@ function createCliProgram() {
     .option('--coverage-dir <dir>', 'coverage directory')
     .option('--coverage-cmd <cmd>', 'coverage command')
     .option('--report-file <path>', 'write a dedicated report file')
+    .option('--raw-report-file <path>', 'write a raw report file with only the boundary-delimited report block')
     .option('--no-delete', 'skip deleting coverage dir before run')
     .option('--format <format>', 'output format: text, markdown, html', 'text')
     .action(handleCliAction);
@@ -340,6 +360,7 @@ function handleCliAction(filters, opts) {
     coverageDir: opts.coverageDir,
     coverageCmd: opts.coverageCmd,
     reportFile: opts.reportFile,
+    rawReportFile: opts.rawReportFile,
     delete: opts.delete,
     format: opts.format,
   });

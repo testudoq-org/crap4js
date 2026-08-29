@@ -25,6 +25,10 @@
 | 13 — Risk column + multi-format | `src/crap.mjs`, `src/core.mjs`, `test/crap.test.mjs` | ✅ Complete | Risk column (low/moderate/high), `--format text\|markdown\|html` CLI option |
 | 13A — Fix HTML output | `src/crap.mjs`, `src/core.mjs`, `test/crap.test.mjs` | ✅ Complete | Full HTML5 document, coverage stdout→stderr for non-text formats |
 | 14A — Security hardening (local) | `src/core.mjs`, `src/crap.mjs`, `eslint.config.mjs`, `SECURITY.md` | ✅ Complete | validateCoverageCmd, validateCoverageDir, escapeHtml single-quote, eslint-plugin-security, SECURITY.md, npm audit script |
+| 15 — Release & npm Publish Plan | `package.json`, `CHANGELOG.md`, `LEGAL.md` | ✅ Complete | Documentation-only publish/release plan; release prep executed (metadata fixed, changelog updated, prerelease tags `1.0.1-beta.x`) |
+| 16 — CRAP Setup Diagnosis | `README.md`, `src/core.mjs` | ✅ Complete | Diagnosis + workspace setup/diagnosis guidance documented; coverage-failure diagnostics improved |
+| 17 — Legal / License Tidy-Up | `package.json`, `LICENSE`, `LEGAL.md`, `README.md`, `CHANGELOG.md` | ✅ Complete | Switched repo license to CC BY-NC 4.0; added `LEGAL.md`; removed MIT references |
+| 18 — Improve CRAP Report outputting | `src/extract.mjs`, `src/core.mjs`, `test/extract.test.mjs`, `test/integration.test.mjs`, `package.json` | ✅ Complete | `--raw-report-file` option + `extractCrapReportBlock()` boundary extraction; raw report verified for text, markdown, and HTML formats |
 
 ## What Works
 
@@ -33,14 +37,15 @@
 - LCOV parsing with path normalisation, suffix matching, and diagnostic warnings
 - Babel AST-based complexity analysis for JS/TS/JSX
 - Exit code 1 for CI integration when any function scores > 30
-- All 87 tests pass across 4 test files
+- All 99 tests pass across 5 test files
 - Integration tests pass with synthetic temp-dir setup + validation tests
+- `--raw-report-file` writes a boundary-delimited CRAP report block (text, markdown, HTML) via `extractCrapReportBlock()`; non-text formats return the full report (start to EOF) since their coverage summary is redirected to stderr
 - Dog-fooding works: `npm run crap` runs crap4js against its own `src/` files with real coverage
 - `vitest.config.mjs` produces LCOV output for accurate per-function coverage fractions
 - Multi-format output: text (default), markdown, HTML (full HTML5 document)
 - Security hardening: coverageCmd allowlist, coverageDir traversal prevention, HTML entity escaping
 - eslint-plugin-security integrated for static security analysis
-- 0 high-risk functions, 11 moderate in self-analysis
+- 0 high-risk functions, 1 moderate (`extractCrapReportBlock`) in self-analysis
 
 ## Known Gaps (v1)
 

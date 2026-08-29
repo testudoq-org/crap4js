@@ -703,7 +703,6 @@ Add tests for:
 ```
 
 ## Prompt 13A — Fix crap4js --format html
-
 ```
 
 The markdown and plain text outputs are functioning correctly. However,
@@ -756,7 +755,6 @@ Verify:
 ```
 
 ## Prompt 14 — Security Review
-
 ```
 
 Security review of crap4js. Do not implement changes — document findings
@@ -878,7 +876,6 @@ No code is modified by this prompt — it is a review document only.
 ```
 
 ## Prompt 15 — Release & npm Publish Plan
-
 ```
 
 Document a complete release and npm publishing plan for crap4js.
@@ -931,7 +928,6 @@ Combine the publish checklist from Prompt 99 with the following guidance:
 ```
 
 ## Prompt 16 — CRAP Setup Diagnosis
-
 ```
 
 Identify why crap4js did not produce a report after installation and document the required workspace configuration.
@@ -991,7 +987,6 @@ Identify why crap4js did not produce a report after installation and document th
 ```
 
 ## Prompt 17 — Legal / License Tidy-Up
-
 ```
 
 Review the repository for any references to the MIT license and replace them with Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
@@ -1020,70 +1015,6 @@ Review the repository for any references to the MIT license and replace them wit
 
 ## Prompt 18 Improve the Crap Report outputting
 
-Task: Enhance the crap4js tool to generate a dedicated "report-only" block or a separate output file, improving the robustness of CRAPReport.md updates and eliminating fragile console parsing.
+Moved to docs\specs\prompt-18-improvecrapreport-io-spec.md
 
-Objective:
-
-1. Update crap4js: Modify crap4js to emit a dedicated "report-only" block or a separate output file containing the CRAP report.
-2. Improve report extraction: Implement a simpler boundary rule to extract the CRAP report block reliably.
-3. Enhance robustness: Make CRAPReport.md updates more robust by reducing dependence on console output parsing.
-
-Requirements:
-
-1. Boundary rule: Use a simple boundary rule, such as:
-   * Start: line === 'CRAP Report'
-   * End: first line after start matching '% Coverage report from'
-2. Report extraction: Update `extractCrapReportBlock()` to reliably return the full report from the dedicated output file or block.
-3. Compatibility: Ensure that `npm run crap` alone can generate the report and copy it to CRAPReport.md.
-
-Expected** **outcome:
-
-1. Robust report updates: CRAPReport.md updates are no longer fragile and dependent on console output parsing.
-2. Simplified report extraction: The extractor can simply read a file instead of tailing terminal output.
-3. Improved maintainability: The updated crap4js tool is more maintainable and less prone to errors.
-
-Implementation** **strategy:
-
-1. Investigate current implementation: Review the current implementation of crap4js and the report extraction script.
-2. Design and test updates: Design and test the updates to crap4js and the report extraction script.
-3. Verify robustness: Verify that the updated implementation is more robust and reliable.
-
-Deliverables:
-
-1. Updated crap4js tool: A modified version of crap4js that emits a dedicated "report-only" block or a separate output file.
-2. Updated report extraction script: An updated report extraction script that uses the simpler boundary rule and extracts the report reliably.
-3. Test results: Test results verifying the robustness and reliability of the updated implementation.
-
-Task: Enhance the crap4js tool to generate a dedicated "report-only" block or a separate output file, improving the robustness of CRAPReport.md updates and eliminating fragile console parsing.
-
-Objective:
-
-1. Update crap4js: Modify crap4js to emit a dedicated "report-only" block or a separate output file containing the CRAP report.
-2. Improve report extraction: Implement a simpler boundary rule to extract the CRAP report block reliably.
-3. Enhance robustness: Make CRAPReport.md updates more robust by reducing dependence on console output parsing.
-
-Requirements:
-
-1. Boundary rule: Use a simple boundary rule, such as:
-   * Start: line === 'CRAP Report'
-   * End: first line after start matching '% Coverage report from'
-2. Report extraction: Update `extractCrapReportBlock()` to reliably return the full report from the dedicated output file or block.
-3. Compatibility: Ensure that `npm run crap` alone can generate the report and copy it to CRAPReport.md.
-
-Expected** **outcome:
-
-1. Robust report updates: CRAPReport.md updates are no longer fragile and dependent on console output parsing.
-2. Simplified report extraction: The extractor can simply read a file instead of tailing terminal output.
-3. Improved maintainability: The updated crap4js tool is more maintainable and less prone to errors.
-
-Implementation** **strategy:
-
-1. Investigate current implementation: Review the current implementation of crap4js and the report extraction script.
-2. Design and test updates: Design and test the updates to crap4js and the report extraction script.
-3. Verify robustness: Verify that the updated implementation is more robust and reliable.
-
-Deliverables:
-
-1. Updated crap4js tool: A modified version of crap4js that emits a dedicated "report-only" block or a separate output file.
-2. Updated report extraction script: An updated report extraction script that uses the simpler boundary rule and extracts the report reliably.
-3. Test results: Test results verifying the robustness and reliability of the updated implementation.
+Going forward all prompts will be stored within docs\specs\ for easier maintenance and accessibility. The file pattern will follow similar to prompt-XX-description-of-feature-spec.md eg prompt-18-improvecrapreport-io-spec.md
