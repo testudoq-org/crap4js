@@ -32,6 +32,23 @@ describe('crapScore', () => {
     // CC=12, coverage=0.45 → 144*(0.55)³+12 = 144*0.166375+12 ≈ 35.958
     expect(crapScore(12, 0.45)).toBeCloseTo(35.958, 1);
   });
+
+  it('returns CC² + CC for CC=1, coverage=0 (no coverage → max penalty)', () => {
+    // 1*1*(1-0)³ + 1 = 2
+    expect(crapScore(1, 0)).toBe(2);
+  });
+
+  it('returns 1 for CC=1, full coverage', () => {
+    expect(crapScore(1, 1)).toBe(1);
+  });
+
+  it('returns null when coverageFraction is null', () => {
+    expect(crapScore(5, null)).toBeNull();
+  });
+
+  it('returns null when coverageFraction is undefined', () => {
+    expect(crapScore(5, undefined)).toBeNull();
+  });
 });
 
 describe('riskLevel', () => {
@@ -52,6 +69,32 @@ describe('riskLevel', () => {
 
   it('returns null if score is null', () => {
     expect(riskLevel(null)).toBeNull();
+  });
+});
+
+describe('riskLevel boundaries', () => {
+  it('returns null for null score', () => {
+    expect(riskLevel(null)).toBeNull();
+  });
+
+  it('returns low at 0', () => {
+    expect(riskLevel(0)).toBe('low');
+  });
+
+  it('returns low just below the moderate threshold (4.999)', () => {
+    expect(riskLevel(4.999)).toBe('low');
+  });
+
+  it('returns moderate exactly at the threshold (5)', () => {
+    expect(riskLevel(5)).toBe('moderate');
+  });
+
+  it('returns moderate just below the high threshold (29.999)', () => {
+    expect(riskLevel(29.999)).toBe('moderate');
+  });
+
+  it('returns high exactly at the threshold (30)', () => {
+    expect(riskLevel(30)).toBe('high');
   });
 });
 
@@ -219,11 +262,22 @@ describe('formatReport', () => {
       { id: 'src/util/helpers.mjs:1:unknown', name: 'unknownFn', file: 'src/util/helpers.mjs', startLine: 1, endLine: 2, cc: 3, coverage: { covered: 0, instrumented: 0, percentage: null }, crap: null, risk: null },
     ];
 
-    it('produces valid JSON with expected schema', () => {
+    it('produces valid JSON with versioned schema and summary', () => {
       const report = formatReport(jsonEntries, 'json');
       const parsed = JSON.parse(report);
-      expect(Array.isArray(parsed)).toBe(true);
-      expect(parsed[0]).toMatchObject({
+      expect(parsed).toMatchObject({
+        version: 1,
+        tool: 'crap4js',
+        summary: {
+          functions: 4,
+          high: 1,
+          moderate: 1,
+          low: 1,
+          na: 1,
+        },
+      });
+      expect(Array.isArray(parsed.functions)).toBe(true);
+      expect(parsed.functions[0]).toMatchObject({
         id: expect.any(String),
         name: 'complexFn',
         file: 'src/auth/validator.mjs',
@@ -239,16 +293,16 @@ describe('formatReport', () => {
     it('sorts descending by CRAP, null-coverage last', () => {
       const report = formatReport(jsonEntries, 'json');
       const parsed = JSON.parse(report);
-      expect(parsed[0].name).toBe('complexFn');
-      expect(parsed[1].name).toBe('<anonymous:47>');
-      expect(parsed[2].name).toBe('simpleFn');
-      expect(parsed[3].name).toBe('unknownFn');
+      expect(parsed.functions[0].name).toBe('complexFn');
+      expect(parsed.functions[1].name).toBe('<anonymous:47>');
+      expect(parsed.functions[2].name).toBe('simpleFn');
+      expect(parsed.functions[3].name).toBe('unknownFn');
     });
 
     it('preserves null handling for uncovered entries', () => {
       const report = formatReport(jsonEntries, 'json');
       const parsed = JSON.parse(report);
-      const unknown = parsed.find(e => e.name === 'unknownFn');
+      const unknown = parsed.functions.find(e => e.name === 'unknownFn');
       expect(unknown.crap).toBeNull();
       expect(unknown.risk).toBeNull();
       expect(unknown.coverage.percentage).toBeNull();
@@ -257,10 +311,42 @@ describe('formatReport', () => {
     it('includes risk values', () => {
       const report = formatReport(jsonEntries, 'json');
       const parsed = JSON.parse(report);
-      expect(parsed[0].risk).toBe('high');
-      expect(parsed[1].risk).toBe('moderate');
-      expect(parsed[2].risk).toBe('low');
-      expect(parsed[3].risk).toBeNull();
+      expect(parsed.functions[0].risk).toBe('high');
+      expect(parsed.functions[1].risk).toBe('moderate');
+      expect(parsed.functions[2].risk).toBe('low');
+      expect(parsed.functions[3].risk).toBeNull();
     });
+  });
+});
+
+describe('json format edge cases', () => {
+  it('serialises an all-null entry cleanly', () => {
+    const entries = [
+      { id: 'src/x.mjs:1:fn', name: 'fn', file: 'src/x.mjs', startLine: 1, endLine: 2, cc: 3, coverage: { covered: 0, instrumented: 0, percentage: null }, crap: null, risk: null },
+    ];
+    const report = formatReport(entries, 'json');
+    const parsed = JSON.parse(report);
+    expect(parsed.functions[0].crap).toBeNull();
+    expect(parsed.functions[0].risk).toBeNull();
+    expect(parsed.functions[0].coverage.percentage).toBeNull();
+    // Round-trips through JSON.stringify without throwing.
+    expect(() => JSON.stringify(parsed)).not.toThrow();
+    expect(parsed.summary).toMatchObject({ functions: 1, high: 0, moderate: 0, low: 0, na: 1 });
+  });
+
+  it('produces exact summary counts for a single entry', () => {
+    const entries = [
+      { id: 'src/x.mjs:1:fn', name: 'fn', file: 'src/x.mjs', startLine: 1, endLine: 2, cc: 1, coverage: { covered: 2, instrumented: 2, percentage: 1.0 }, crap: 1, risk: 'low' },
+    ];
+    const parsed = JSON.parse(formatReport(entries, 'json'));
+    expect(parsed.summary).toMatchObject({ functions: 1, high: 0, moderate: 0, low: 1, na: 0 });
+    expect(parsed.functions).toHaveLength(1);
+    expect(parsed.functions[0].coverage).toEqual({ covered: 2, instrumented: 2, percentage: 1.0 });
+  });
+
+  it('produces all-zero summary counts for an empty array', () => {
+    const parsed = JSON.parse(formatReport([], 'json'));
+    expect(parsed.summary).toMatchObject({ functions: 0, high: 0, moderate: 0, low: 0, na: 0 });
+    expect(parsed.functions).toEqual([]);
   });
 });

@@ -204,17 +204,36 @@ function formatHtml(sorted) {
 // ── JSON formatter ──────────────────────────────────────────────────
 
 function formatJson(sorted) {
-  return JSON.stringify(sorted.map(entry => ({
-    id: entry.id,
-    name: entry.name,
-    file: entry.file,
-    startLine: entry.startLine,
-    endLine: entry.endLine,
-    cc: entry.cc,
-    coverage: entry.coverage,
-    crap: entry.crap,
-    risk: entry.risk,
-  })), null, 2);
+  const summary = {
+    functions: sorted.length,
+    high: 0,
+    moderate: 0,
+    low: 0,
+    na: 0,
+  };
+  for (const entry of sorted) {
+    if (entry.crap === null) summary.na++;
+    else if (riskLevel(entry.crap) === 'high') summary.high++;
+    else if (riskLevel(entry.crap) === 'moderate') summary.moderate++;
+    else summary.low++;
+  }
+
+  return JSON.stringify({
+    version: 1,
+    tool: 'crap4js',
+    summary,
+    functions: sorted.map(entry => ({
+      id: entry.id,
+      name: entry.name,
+      file: entry.file,
+      startLine: entry.startLine,
+      endLine: entry.endLine,
+      cc: entry.cc,
+      coverage: entry.coverage,
+      crap: entry.crap,
+      risk: entry.risk,
+    })),
+  }, null, 2);
 }
 
 /**

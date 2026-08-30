@@ -4,6 +4,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { run, validateCoverageCmd, validateCoverageDir } from '../src/core.mjs';
 import { extractCrapReportBlock } from '../src/extract.mjs';
+import { formatReport } from '../src/crap.mjs';
 
 // ── Validation tests ────────────────────────────────────────────────
 
@@ -356,7 +357,7 @@ describe('integration', () => {
     expect(result.output).toContain('CRAP Report');
   });
 
-  it('produces valid JSON when --format json is used', () => {
+  it('produces valid JSON with versioned schema when --format json is used', () => {
     const srcDir = join(tempDir, 'src');
     mkdirSync(srcDir, { recursive: true });
     writeFileSync(join(srcDir, 'good.mjs'), 'export function good() { return 1; }');
@@ -376,9 +377,20 @@ describe('integration', () => {
 
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.output);
-    expect(Array.isArray(parsed)).toBe(true);
-    expect(parsed.length).toBeGreaterThanOrEqual(1);
-    expect(parsed[0]).toMatchObject({
+    expect(parsed).toMatchObject({
+      version: 1,
+      tool: 'crap4js',
+      summary: {
+        functions: expect.any(Number),
+        high: expect.any(Number),
+        moderate: expect.any(Number),
+        low: expect.any(Number),
+        na: expect.any(Number),
+      },
+    });
+    expect(Array.isArray(parsed.functions)).toBe(true);
+    expect(parsed.functions.length).toBeGreaterThanOrEqual(1);
+    expect(parsed.functions[0]).toMatchObject({
       id: expect.stringContaining('good.mjs'),
       name: 'good',
       file: expect.stringContaining('good.mjs'),
@@ -393,5 +405,87 @@ describe('integration', () => {
       crap: expect.any(Number),
       risk: expect.any(String),
     });
+  });
+});
+
+describe('run() format parity', () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'crap4js-parity-'));
+  });
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  function setup() {
+    const srcDir = join(tempDir, 'src');
+    mkdirSync(srcDir, { recursive: true });
+    writeFileSync(join(srcDir, 'good.mjs'), 'export function good() { return 1; }');
+
+    const covDir = join(tempDir, 'coverage');
+    mkdirSync(covDir, { recursive: true });
+    writeFileSync(join(covDir, 'lcov.info'), [
+      `SF:${join(srcDir, 'good.mjs').replace(/\\/g, '/')}`,
+      'DA:1,1',
+      'DA:2,1',
+      'end_of_record',
+    ].join('\n'));
+
+    return { srcDir, covDir };
+  }
+
+  function commonOpts(covDir, srcDir) {
+    return {
+      filters: [],
+      coverageDir: covDir,
+      sourceGlob: [join(srcDir, '**/*.mjs').replace(/\\/g, '/')],
+      delete: false,
+      runCoverage: false,
+    };
+  }
+
+  it('renders text format via run()', () => {
+    const { srcDir, covDir } = setup();
+    const result = run({ ...commonOpts(covDir, srcDir), format: 'text' });
+    expect(result.exitCode).toBe(0);
+    expect(result.output).toMatch(/^CRAP Report/);
+    expect(result.output).toContain('good');
+  });
+
+  it('renders markdown format via run()', () => {
+    const { srcDir, covDir } = setup();
+    const result = run({ ...commonOpts(covDir, srcDir), format: 'markdown' });
+    expect(result.exitCode).toBe(0);
+    expect(result.output).toMatch(/^## CRAP Report/);
+    expect(result.output).toMatch(/\| good \|/);
+  });
+
+  it('renders html format via run()', () => {
+    const { srcDir, covDir } = setup();
+    const result = run({ ...commonOpts(covDir, srcDir), format: 'html' });
+    expect(result.exitCode).toBe(0);
+    expect(result.output).toMatch(/^<!DOCTYPE html>/);
+    expect(result.output).toContain('good');
+  });
+
+  it('--format json output is byte-identical to formatReport of its own entries', () => {
+    const { srcDir, covDir } = setup();
+    const jsonResult = run({ ...commonOpts(covDir, srcDir), format: 'json' });
+    expect(jsonResult.exitCode).toBe(0);
+    const parsed = JSON.parse(jsonResult.output);
+    const reformatted = formatReport(parsed.functions, 'json');
+    expect(reformatted).toBe(jsonResult.output);
+  });
+
+  it('all formats render the same underlying model from run()', () => {
+    const { srcDir, covDir } = setup();
+    const jsonResult = run({ ...commonOpts(covDir, srcDir), format: 'json' });
+    const parsed = JSON.parse(jsonResult.output);
+    for (const fmt of ['text', 'markdown', 'html']) {
+      const result = run({ ...commonOpts(covDir, srcDir), format: fmt });
+      expect(result.output).toBe(formatReport(parsed.functions, fmt));
+    }
   });
 });

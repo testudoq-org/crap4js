@@ -99,8 +99,12 @@ complexFn                      src/auth/validator.mjs               12   45.0%  
 simpleFn                       src/auth/validator.mjs                1  100.0%     1.0
 unknownFn                      src/util/helpers.mjs                  3    N/A      N/A
 
-1 functions at high risk, 1 at moderate.
+ 1 functions at high risk, 1 at moderate.
 ```
+
+## Nested Functions
+
+Each instrumented line is attributed to the **innermost** containing function. Parent and nested functions therefore have disjoint coverage sets. A parent whose only instrumented lines live inside nested functions will report `N/A` coverage and CRAP.
 
 ## Risk Thresholds
 
@@ -153,6 +157,41 @@ crap4js [filters...]          Filter by file path fragment (OR logic)
   --coverage-cmd <cmd>        Coverage command (default: from package.json)
   --no-delete                 Skip deleting coverage dir before run
   --help                      Show help
+```
+
+## JSON Output
+
+Use `--format json` to emit a versioned schema:
+
+```json
+{
+  "version": 1,
+  "tool": "crap4js",
+  "summary": {
+    "functions": 4,
+    "high": 1,
+    "moderate": 1,
+    "low": 1,
+    "na": 1
+  },
+  "functions": [
+    {
+      "id": "src/auth/validator.mjs:1:simpleFn",
+      "name": "simpleFn",
+      "file": "src/auth/validator.mjs",
+      "startLine": 1,
+      "endLine": 3,
+      "cc": 1,
+      "coverage": {
+        "covered": 3,
+        "instrumented": 3,
+        "percentage": 1.0
+      },
+      "crap": 1,
+      "risk": "low"
+    }
+  ]
+}
 ```
 
 ## Troubleshooting

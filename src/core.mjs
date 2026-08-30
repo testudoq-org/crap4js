@@ -222,13 +222,61 @@ function loadCoverageData(coverageDir, sourceFiles) {
   return loadCoverage(coverageDir, sourceFileSet);
 }
 
+/**
+ * Innermost-wins coverage ownership.
+ *
+ * For each instrumented line, assign it to the last (innermost) function
+ * whose range [startLine, endLine] contains it. Because the function list
+ * is sorted by startLine, walking left-to-right and tracking the last match
+ * yields the innermost containing function. Parent and nested functions
+ * therefore have disjoint instrumented-line sets.
+ *
+ * Worst-case complexity: O(F log F + F × L), where F is the number of
+ * functions and L is the number of instrumented lines. In practice the
+ * early-termination condition (lineNo < fn.startLine → break) makes the
+ * inner loop effectively O(depth) for well-nested code.
+ *
+ * @param {Map<number, boolean>} fileLines
+ * @param {Array<{startLine: number, endLine: number}>} functions - sorted by startLine
+ * @param {number[]} sortedKeys
+ * @returns {Map<number, Set<number>>} ownership map: function index -> owned line numbers
+ */
+export function assignCoverageOwnership(fileLines, functions, sortedKeys) {
+  if (!fileLines || !sortedKeys || sortedKeys.length === 0) {
+    const empty = new Map();
+    for (let i = 0; i < functions.length; i++) empty.set(i, new Set());
+    return empty;
+  }
+
+  const ownership = new Map();
+  for (let i = 0; i < functions.length; i++) {
+    ownership.set(i, new Set());
+  }
+
+  for (const lineNo of sortedKeys) {
+    let innermostIndex = -1;
+    for (let i = 0; i < functions.length; i++) {
+      const fn = functions[i];
+      if (lineNo < fn.startLine) break; // functions sorted by startLine
+      if (lineNo <= fn.endLine) {
+        innermostIndex = i;
+      }
+    }
+    if (innermostIndex !== -1) {
+      ownership.get(innermostIndex).add(lineNo);
+    }
+  }
+
+  return ownership;
+}
+
 // ── Analysis ───────────────────────────────────────────────────────
 
 function analyzeSourceFiles(filesToAnalyse, coverageData) {
   return filesToAnalyse.flatMap(filePath => analyzeFile(filePath, coverageData));
 }
 
-function analyzeFile(filePath, coverageData) {
+export function analyzeFile(filePath, coverageData) {
   let source;
   try {
     source = readFileSync(filePath, 'utf8');
@@ -247,8 +295,22 @@ function analyzeFile(filePath, coverageData) {
 
   const fileLines = coverageData.get(filePath);
   const sortedKeys = buildCoverageIndex(fileLines);
+
+  // Innermost-wins: sort functions by startLine and assign each instrumented
+  // line to the last (deepest) function whose range contains it.
+  const sorted = [...functions].sort((a, b) => a.startLine - b.startLine);
+  const ownership = assignCoverageOwnership(fileLines, sorted, sortedKeys);
+
+  const coverageByFunction = new Map();
+  for (let i = 0; i < sorted.length; i++) {
+    const owned = ownership.get(i) || new Set();
+    const instrumented = owned.size;
+    const covered = [...owned].filter(line => fileLines.get(line)).length;
+    coverageByFunction.set(sorted[i], { instrumented, covered });
+  }
+
   return functions.map(fn => {
-    const { covered, instrumented } = coverageCounts(fileLines, fn.startLine, fn.endLine, sortedKeys);
+    const { covered, instrumented } = coverageByFunction.get(fn) || { instrumented: 0, covered: 0 };
     const fraction = instrumented === 0 ? null : covered / instrumented;
     const crap = crapScore(fn.cc, fraction);
     return {
@@ -269,17 +331,19 @@ function analyzeFile(filePath, coverageData) {
   });
 }
 
-function buildCoverageIndex(fileLines) {
+export function buildCoverageIndex(fileLines) {
   if (!fileLines) return null;
   return [...fileLines.keys()].sort((a, b) => a - b);
 }
 
-export function coverageFraction(fileLines, startLine, endLine, sortedKeys) {
+/* eslint-disable-next-line no-unused-vars */
+function coverageFraction(fileLines, startLine, endLine, sortedKeys) {
   const { instrumented, covered } = coverageCounts(fileLines, startLine, endLine, sortedKeys);
   return instrumented === 0 ? null : covered / instrumented;
 }
 
-export function coverageCounts(fileLines, startLine, endLine, sortedKeys) {
+/* eslint-disable-next-line no-unused-vars */
+function coverageCounts(fileLines, startLine, endLine, sortedKeys) {
   if (!fileLines) return { instrumented: 0, covered: 0 };
   if (!sortedKeys || sortedKeys.length === 0) return { instrumented: 0, covered: 0 };
 

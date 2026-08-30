@@ -139,6 +139,62 @@ describe('coverage.mjs', () => {
       );
       expect(sourceMapWarning).toBeUndefined();
     });
+
+    it('parses an empty record (SF: but no DA: lines) into an empty line map', () => {
+      const lcov = [
+        'SF:src/foo.mjs',
+        'end_of_record',
+      ].join('\n');
+
+      const sourceFiles = new Set(['src/foo.mjs']);
+      const result = parseLcov(lcov, sourceFiles);
+
+      expect(result.size).toBe(1);
+      expect(result.has('src/foo.mjs')).toBe(true);
+      expect(result.get('src/foo.mjs').size).toBe(0);
+    });
+
+    it('parses multiple SF: blocks spanning separate source files', () => {
+      const lcov = [
+        'SF:src/foo.mjs',
+        'DA:1,1',
+        'DA:2,0',
+        'end_of_record',
+        'SF:src/bar.mjs',
+        'DA:1,0',
+        'DA:2,1',
+        'DA:3,1',
+        'end_of_record',
+      ].join('\n');
+
+      const sourceFiles = new Set(['src/foo.mjs', 'src/bar.mjs']);
+      const result = parseLcov(lcov, sourceFiles);
+
+      expect(result.size).toBe(2);
+      const foo = result.get('src/foo.mjs');
+      expect(foo.get(1)).toBe(true);
+      expect(foo.get(2)).toBe(false);
+      const bar = result.get('src/bar.mjs');
+      expect(bar.get(1)).toBe(false);
+      expect(bar.get(2)).toBe(true);
+      expect(bar.get(3)).toBe(true);
+    });
+
+    it('treats a hit count greater than 1 as covered', () => {
+      const lcov = [
+        'SF:src/foo.mjs',
+        'DA:1,5',
+        'DA:2,0',
+        'end_of_record',
+      ].join('\n');
+
+      const sourceFiles = new Set(['src/foo.mjs']);
+      const result = parseLcov(lcov, sourceFiles);
+
+      const foo = result.get('src/foo.mjs');
+      expect(foo.get(1)).toBe(true);   // 5 hits → covered
+      expect(foo.get(2)).toBe(false);  // 0 hits → uncovered
+    });
   });
 
   describe('CRAP4JS_DEBUG_LCOV', () => {
