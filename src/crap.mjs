@@ -69,10 +69,14 @@ function fmtRisk(crap) {
   return riskLevel(crap) || 'N/A';
 }
 
+function plural(n, singular, plural) {
+  return n === 1 ? singular : plural;
+}
+
 /** Risk summary string. */
 function riskSummary(sorted) {
   const { highCount, moderateCount } = riskCounts(sorted);
-  return `${highCount} functions at high risk, ${moderateCount} at moderate.`;
+  return `${highCount} ${plural(highCount, 'function', 'functions')} at high risk, ${moderateCount} at moderate.`;
 }
 
 // ── Text formatter ──────────────────────────────────────────────────
