@@ -277,7 +277,7 @@ Fix: replaced the inline checks with calls to `riskLevel(entry.crap)`, so the JS
 
 Updated the JSDoc in `src/core.mjs` to state the actual worst-case complexity: **O(F log F + F × L)**. Added a note that the early-termination condition (`lineNo < fn.startLine → break`) makes the inner loop effectively O(depth) for well-nested code in practice.
 
-### Phase 3 — Dead export removal (restored as module-private)
+### Phase 3 — Dead export removal (restored as module-private, then fully deleted)
 
 `coverageCounts` and `coverageFraction` in `src/core.mjs` were exported but unused outside of tests in `test/core.test.mjs`. The production pipeline (`analyzeFile`) uses `assignCoverageOwnership` exclusively.
 
@@ -286,6 +286,8 @@ Actions:
 - Restored the functions after a follow-up review determined the original plan intended only to unexport them, not delete them. Added `eslint-disable-next-line no-unused-vars` comments above each to suppress the reintroduced lint error, since these functions are intentionally kept module-private per the plan.
 - Removed the `import { coverageCounts, coverageFraction }` line from `test/core.test.mjs`.
 - Deleted the entire `describe('P2 indexed coverage')` block (7 tests) that tested dead code.
+
+> **Follow-up (2026-08-30):** The dead helpers were later fully removed from `src/core.mjs` (closes #19). `npm run crap` exits 0 and no longer lists either function.
 
 ### Phase 4 — Missing edge-case tests for nested coverage
 

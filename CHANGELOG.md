@@ -4,6 +4,15 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com).
 
+## [Unreleased]
+
+### Tests
+- `assignCoverageOwnership`: parent/child disjoint ownership, three-level nesting, sibling nested functions, nested arrows, nested class methods, sparse/zero LCOV, empty-ownership parent.
+- `analyzeFile` full-model verification with exact CRAP/risk values.
+- `riskLevel`/`crapScore` boundary tests.
+- JSON, CLI format-parity, and LCOV edge-case tests.
+- Dead-code removal: `coverageCounts` / `coverageFraction` deleted from `src/core.mjs` (closes #19).
+
 ## [1.0.1-beta.2] - 2026-04-14
 
 ### Changed

@@ -37,3 +37,8 @@ bottlenecks on current workloads. The `coverage command` phase dominates
 (~99% of runtime). If finer granularity is needed later, split
 `analyzeFile` into separate `coverage matching` and `CRAP calculation`
 phases.
+
+
+## Dead code (v1)
+
+`src/core.mjs` module-private `coverageCounts` / `coverageFraction` helpers were removed after the switch to innermost-wins ownership via `assignCoverageOwnership` eliminated their call-sites (see [issue #19](https://github.com/testudoq-org/crap4js/issues/19)).

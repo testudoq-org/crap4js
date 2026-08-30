@@ -336,33 +336,6 @@ export function buildCoverageIndex(fileLines) {
   return [...fileLines.keys()].sort((a, b) => a - b);
 }
 
-/* eslint-disable-next-line no-unused-vars */
-function coverageFraction(fileLines, startLine, endLine, sortedKeys) {
-  const { instrumented, covered } = coverageCounts(fileLines, startLine, endLine, sortedKeys);
-  return instrumented === 0 ? null : covered / instrumented;
-}
-
-/* eslint-disable-next-line no-unused-vars */
-function coverageCounts(fileLines, startLine, endLine, sortedKeys) {
-  if (!fileLines) return { instrumented: 0, covered: 0 };
-  if (!sortedKeys || sortedKeys.length === 0) return { instrumented: 0, covered: 0 };
-
-  // Binary search: first key >= startLine
-  let lo = 0, hi = sortedKeys.length;
-  while (lo < hi) {
-    const mid = (lo + hi) >>> 1;
-    if (sortedKeys[mid] < startLine) lo = mid + 1;
-    else hi = mid;
-  }
-
-  let instrumented = 0, covered = 0;
-  for (let i = lo; i < sortedKeys.length && sortedKeys[i] <= endLine; i++) {
-    instrumented++;
-    if (fileLines.get(sortedKeys[i])) covered++;
-  }
-  return { instrumented, covered };
-}
-
 /**
  * Run the full CRAP analysis pipeline.
  * Exported for testing.

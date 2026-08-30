@@ -2,10 +2,8 @@ CRAP Report
 ===========
 Function                       File                                   CC     Cov%     CRAP  Risk      
 ------------------------------------------------------------------------------------------------------
-coverageCounts                 src/core.mjs                            9     0.0%     90.0  high      
 assignCoverageOwnership        src/core.mjs                           11   100.0%     11.0  moderate  
 resolveLcovSource              src/coverage.mjs                        7    80.0%      7.4  moderate  
-coverageFraction               src/core.mjs                            2     0.0%      6.0  moderate  
 analyzeFile                    src/core.mjs                            5    81.3%      5.2  moderate  
 handleSourceFile               src/coverage.mjs                        5   100.0%      5.0  moderate  
 formatJson                     src/crap.mjs                            5   100.0%      5.0  moderate  
@@ -69,7 +67,7 @@ reportCoverageCommandError     src/core.mjs                            2   100.0
 buildCoverageIndex             src/core.mjs                            2   100.0%      2.0  low       
 getOrDefault                   src/core.mjs                            2   100.0%      2.0  low       
 maybeRunCoverage               src/core.mjs                            2   100.0%      2.0  low       
-<anonymous:435>                src/core.mjs                            2   100.0%      2.0  low       
+<anonymous:408>                src/core.mjs                            2   100.0%      2.0  low       
 createCliProgram               src/core.mjs                            1     0.0%      2.0  low       
 handleCliAction                src/core.mjs                            1     0.0%      2.0  low       
 processLcovLine                src/coverage.mjs                        2   100.0%      2.0  low       
@@ -101,11 +99,11 @@ analyzeSourceFiles             src/core.mjs                            1   100.0
 normalizeRunOptions            src/core.mjs                            1   100.0%      1.0  low       
 notFalse                       src/core.mjs                            1   100.0%      1.0  low       
 finalizeRunOutput              src/core.mjs                            1   100.0%      1.0  low       
-<anonymous:447>                src/core.mjs                            1   100.0%      1.0  low       
-<anonymous:449>                src/core.mjs                            1   100.0%      1.0  low       
-<anonymous:450>                src/core.mjs                            1   100.0%      1.0  low       
-<anonymous:457>                src/core.mjs                            1   100.0%      1.0  low       
-<anonymous:458>                src/core.mjs                            1   100.0%      1.0  low       
+<anonymous:420>                src/core.mjs                            1   100.0%      1.0  low       
+<anonymous:422>                src/core.mjs                            1   100.0%      1.0  low       
+<anonymous:423>                src/core.mjs                            1   100.0%      1.0  low       
+<anonymous:430>                src/core.mjs                            1   100.0%      1.0  low       
+<anonymous:431>                src/core.mjs                            1   100.0%      1.0  low       
 isCompiledOutputPath           src/coverage.mjs                        1   100.0%      1.0  low       
 <anonymous:118>                src/coverage.mjs                        1   100.0%      1.0  low       
 <anonymous:119>                src/coverage.mjs                        1   100.0%      1.0  low       
@@ -122,4 +120,4 @@ escapeHtml                     src/crap.mjs                            1   100.0
 <anonymous:26>                 src/extract.mjs                         1   100.0%      1.0  low       
 <anonymous:186>                src/core.mjs                            1      N/A      N/A  N/A       
 
-1 functions at high risk, 7 at moderate.
+0 functions at high risk, 6 at moderate.
