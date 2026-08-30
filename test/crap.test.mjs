@@ -148,7 +148,22 @@ describe('formatReport', () => {
 
   it('includes a risk summary line', () => {
     const report = formatReport(entries);
-    expect(report).toMatch(/1 functions at high risk, 1 at moderate\./);
+    expect(report).toMatch(/1 function at high risk, 1 at moderate\./);
+  });
+
+  it('pluralises correctly for counts other than 1', () => {
+    const entries = [
+      { name: 'a', file: 'src/x.mjs', cc: 1, coverage: 1.0, crap: 1, risk: 'low' },
+      { name: 'b', file: 'src/x.mjs', cc: 1, coverage: 1.0, crap: 1, risk: 'low' },
+      { name: 'c', file: 'src/x.mjs', cc: 12, coverage: 0.0, crap: 156, risk: 'high' },
+      { name: 'd', file: 'src/x.mjs', cc: 1, coverage: 1.0, crap: 1, risk: 'low' },
+      { name: 'e', file: 'src/x.mjs', cc: 6, coverage: 0.0, crap: 42, risk: 'high' },
+      { name: 'f', file: 'src/x.mjs', cc: 4, coverage: 0.5, crap: 17, risk: 'moderate' },
+      { name: 'g', file: 'src/x.mjs', cc: 4, coverage: 0.5, crap: 17, risk: 'moderate' },
+      { name: 'h', file: 'src/x.mjs', cc: 4, coverage: 0.5, crap: 17, risk: 'moderate' },
+    ];
+    const report = formatReport(entries, 'text');
+    expect(report).toMatch(/2 functions at high risk, 3 at moderate\./);
   });
 
   it('truncates long names with …', () => {
@@ -182,7 +197,7 @@ describe('formatReport', () => {
 
   it('includes risk summary in markdown', () => {
     const report = formatReport(entries, 'markdown');
-    expect(report).toMatch(/1 functions at high risk, 1 at moderate\./);
+    expect(report).toMatch(/1 function at high risk, 1 at moderate\./);
   });
 
   // ── HTML format ───────────────────────────────────────────────
@@ -249,7 +264,7 @@ describe('formatReport', () => {
 
   it('includes risk summary in HTML', () => {
     const report = formatReport(entries, 'html');
-    expect(report).toMatch(/<p>1 functions at high risk, 1 at moderate\.<\/p>/);
+    expect(report).toMatch(/<p>1 function at high risk, 1 at moderate\.<\/p>/);
   });
 
   // ── JSON format ──────────────────────────────────────────────────

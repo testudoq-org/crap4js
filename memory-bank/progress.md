@@ -29,6 +29,9 @@
 | 16 — CRAP Setup Diagnosis | `README.md`, `src/core.mjs` | ✅ Complete | Diagnosis + workspace setup/diagnosis guidance documented; coverage-failure diagnostics improved |
 | 17 — Legal / License Tidy-Up | `package.json`, `LICENSE`, `LEGAL.md`, `README.md`, `CHANGELOG.md` | ✅ Complete | Switched repo license to CC BY-NC 4.0; added `LEGAL.md`; removed MIT references |
 | 18 — Improve CRAP Report outputting | `src/extract.mjs`, `src/core.mjs`, `test/extract.test.mjs`, `test/integration.test.mjs`, `package.json` | ✅ Complete | `--raw-report-file` option + `extractCrapReportBlock()` boundary extraction; raw report verified for text, markdown, and HTML formats |
+| 20 — Performance enhancements | `src/core.mjs`, `src/complexity.mjs`, `src/coverage.mjs`, `src/crap.mjs`, `src/env.mjs` | ✅ Complete | Profiler (CRAP4JS_PROFILE), DRY fix, single-pass AST, binary-search coverage, path index, JSON output |
+| 21 — Analysis model + JSON + nested coverage | `src/core.mjs`, `src/crap.mjs`, `test/core.test.mjs`, `test/crap.test.mjs`, `test/integration.test.mjs`, `README.md` | ✅ Complete | Innermost-wins nested coverage, versioned JSON schema with summary, dead-code removal (#19) |
+| 22 — Core nested coverage tests | `test/core.test.mjs`, `src/core.mjs`, `README.md`, `CHANGELOG.md` | ✅ Complete | Nested ownership tests expanded, dead-code follow-up complete, npm run crap exits 0 |
 
 ## What Works
 

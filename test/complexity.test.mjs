@@ -127,6 +127,14 @@ describe('complexity.mjs', () => {
       expect(fns[0].cc).toBe(2);
     });
 
+    it('for await...of parses as ForOfStatement with await flag', async () => {
+      const { parse } = await import('@babel/parser');
+      const ast = parse('async function f() { for await (const x of []) {} }');
+      const loop = ast.program.body[0].body.body[0];
+      expect(loop.type).toBe('ForOfStatement');
+      expect(loop.await).toBe(true);
+    });
+
     it('while: CC = 2', () => {
       const fns = extractFunctions(
         'function f() { while (x) {} }', file

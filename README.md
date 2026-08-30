@@ -277,11 +277,11 @@ CRAP(fn) = CC² × (1 - coverage)³ + CC
 - **CC** = cyclomatic complexity (decision points + 1)
 - **coverage** = fraction of instrumented lines covered by tests (from LCOV)
 
-| Score | Risk |
-|-------|------|
-| 1–5   | Low — clean code |
-| 5–30  | Moderate — refactor or add tests |
-| 30+   | High — complex and under-tested |
+| Score  | Risk                             |
+|--------|----------------------------------|
+| < 5    | Low — clean code                 |
+| 5–<30  | Moderate — refactor or add tests |
+| >= 30  | High — complex and under-tested  |
 
 ## What It Counts
 

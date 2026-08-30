@@ -405,7 +405,7 @@ function renderFinalOutput(entries, coverageCommandFailed, coverageLoaded, repor
 
 function finalRunExitCode(entries, coverageCommandFailed, coverageLoaded) {
   if (coverageCommandFailed && !coverageLoaded) return 1;
-  return entries.some(e => e.crap != null && e.crap > 30) ? 1 : 0;
+  return entries.some(e => e.crap != null && e.crap >= 30) ? 1 : 0;
 }
 
 export function run(options = {}) {

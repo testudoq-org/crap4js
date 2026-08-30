@@ -32,6 +32,7 @@ const CC_NODE_TYPES = new Set([
   'ForStatement',
   'ForInStatement',
   'ForOfStatement',
+  'ForAwaitStatement', // documentary alias: Babel emits ForOfStatement with await: true
   'WhileStatement',
   'DoWhileStatement',
   'CatchClause',

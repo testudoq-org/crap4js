@@ -284,7 +284,7 @@ describe('integration', () => {
     expect(formattedContents).toBe(result.output);
   });
 
-  it('returns exit code 1 when a function scores > 30', () => {
+  it('returns exit code 1 when a function scores >= 30', () => {
     const srcDir = join(tempDir, 'src');
     mkdirSync(srcDir, { recursive: true });
 
@@ -332,7 +332,45 @@ describe('integration', () => {
     });
 
     // CC = 6 (1 base + 3 ifs + && + ||), coverage = 0%
-    // CRAP = 6² + 6 = 42 → high risk
+    // CRAP = 6² + 6 = 42 → high risk (>= 30 threshold)
+    expect(result.exitCode).toBe(1);
+    expect(result.output).toContain('high risk');
+  });
+
+  it('returns exit code 1 when a function scores exactly 30 (boundary)', () => {
+    const srcDir = join(tempDir, 'src');
+    mkdirSync(srcDir, { recursive: true });
+
+    // CC=5, coverage=0% → CRAP = 5² + 5 = 30 exactly
+    const boundarySource = `export function boundary(x) {
+      if (x) {}
+      if (!x) {}
+      if (x > 0) {}
+      if (x < 0) {}
+      if (x === 0) {}
+    }`;
+    writeFileSync(join(srcDir, 'boundary.mjs'), boundarySource);
+
+    const covDir = join(tempDir, 'coverage');
+    mkdirSync(covDir, { recursive: true });
+
+    // Coverage at 0% for all lines
+    const lcovContent = [
+      `SF:${join(srcDir, 'boundary.mjs').replace(/\\/g, '/')}`,
+      'DA:1,0', 'DA:2,0', 'DA:3,0', 'DA:4,0', 'DA:5,0', 'DA:6,0', 'DA:7,0',
+      'DA:8,0', 'DA:9,0', 'DA:10,0', 'DA:11,0', 'DA:12,0',
+      'end_of_record',
+    ].join('\n');
+    writeFileSync(join(covDir, 'lcov.info'), lcovContent);
+
+    const result = run({
+      filters: [],
+      coverageDir: covDir,
+      sourceGlob: [join(srcDir, '**/*.mjs').replace(/\\/g, '/')],
+      delete: false,
+      runCoverage: false,
+    });
+
     expect(result.exitCode).toBe(1);
     expect(result.output).toContain('high risk');
   });
