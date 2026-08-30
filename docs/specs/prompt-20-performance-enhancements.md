@@ -143,6 +143,8 @@ Pre-process each file's coverage Map so that "how many instrumented / covered li
 - Preserve the existing `Map<string, Map<number, boolean>>` external contract for `loadCoverage()`.
 - Indexing must be done lazily or on-demand, not eagerly at load time, to avoid slowing down projects where `analyzeFile` is never called.
 
+> **Follow-up note:** `coverageFraction` and `coverageCounts` were later removed from `src/core.mjs` as dead code (closes #19). The DRY fix and indexed-coverage design described above are therefore historical; the current live path uses `assignCoverageOwnership` with `buildCoverageIndex` + binary search.
+
 ### P3 — Path index
 
 Build a normalised-path Map and a short-suffix index once during `loadCoverage()`.
