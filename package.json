@@ -68,7 +68,7 @@
     "@vitest/coverage-v8": "^4.1.11",
     "dry-4-js": "0.5.0-alpha.6",
     "eslint": "^9.0.0",
-    "eslint-plugin-security": "^4.0.1",
+    "eslint-plugin-security": "^4.2.0",
     "varlock": "^1.17.1",
     "vitest": "^4.1.11"
   }
