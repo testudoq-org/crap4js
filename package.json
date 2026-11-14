@@ -55,7 +55,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@babel/parser": "^7.26",
+    "@babel/parser": "^8.0",
     "@babel/traverse": "^8.0",
     "commander": "^15",
     "globby": "^16"
@@ -64,12 +64,12 @@
     "@eslint/js": "^10.0.1",
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/html-reporter": "^3.1.0",
-    "@stryker-mutator/vitest-runner": "^9.6.1",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
+    "@vitest/coverage-v8": "^5.0.3",
     "dry-4-js": "0.5.0-alpha.6",
-    "eslint": "^9.0.0",
-    "eslint-plugin-security": "^4.0.1",
-    "varlock": "^1.17.1",
-    "vitest": "^4.1.11"
+    "eslint": "^10.11.0",
+    "eslint-plugin-security": "^4.2.0",
+    "varlock": "^1.21.1",
+    "vitest": "^5.0.3"
   }
 }
