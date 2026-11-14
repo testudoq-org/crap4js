@@ -1,6 +1,6 @@
 {
   "name": "crap4js",
-  "version": "1.0.1-beta.7",
+  "version": "1.0.1-beta.8",
   "description": "CRAP metric for JavaScript/TypeScript — identifies complex, under-tested code",
   "type": "module",
   "bin": {
@@ -52,7 +52,7 @@
   "author": "testudoq",
   "license": "CC-BY-NC-4.0",
   "engines": {
-    "node": ">=18"
+    "node": ">=22.18.0"
   },
   "dependencies": {
     "@babel/parser": "^8.0",
