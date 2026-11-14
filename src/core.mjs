@@ -10,7 +10,6 @@
  * @property {number|null} crap
  * @property {'low'|'moderate'|'high'|null} risk
  */
-/* eslint-env node */
 
 import { extractFunctions } from './complexity.mjs';
 import { loadCoverage } from './coverage.mjs';
